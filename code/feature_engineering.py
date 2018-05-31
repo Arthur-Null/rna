@@ -13,4 +13,14 @@ pot_list = ['AGO1', 'AGO2', 'AGO3', 'ALKBH5', 'AUF1', 'C17ORF85', 'C22ORF28', 'C
 
 dic = {}
 for pot in pot_list:
-    fin = open('../dataset/')
+    fin = open('../dataset/RNA_trainset/' + pot + '/train', 'r')
+    for line in fin.readlines():
+        try:
+            rna, label = line.split(' ')
+        except:
+            break
+        if rna not in dic:
+            dic[rna] = []
+        dic[rna].append(int(label))
+
+
