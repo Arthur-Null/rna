@@ -35,7 +35,7 @@ for pot in protein_list:
     X = enc.fit_transform(X)
     #print(X)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    model = xgb.XGBClassifier(n_jobs=-1, n_estimators=10000, max_depth=4, learning_rate=1e-3)
+    model = xgb.XGBClassifier(n_jobs=-1, n_estimators=10000, max_depth=4, learning_rate=5e-3)
     model.fit(X_train, y_train, eval_set=[(X_train, y_train),(X_test, y_test)], eval_metric=['auc', 'error', 'logloss'], early_stopping_rounds=50)
     # pred = model.predict_proba(X_test)
     # auc = roc_auc_score(y_test, pred[:, 1])
