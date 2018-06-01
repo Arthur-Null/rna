@@ -13,25 +13,36 @@ encoder = {'A': 0, 'G': 1, 'C': 2, 'T': 3}
 fout = open('result', 'w')
 
 for pot in protein_list:
+    replicate = []
     print('-' * 20 + pot + '-' * 20)
     fin = open('../../../dataset/RNA_trainset/' + pot + '/train')
     X = []
     y = []
     for line in fin.readlines():
         rna, label = line.split('\t')
+        if rna in replicate:
+            continue
+        else:
+            replicate.append(rna)
         label = int(label)
         rna = list(rna)
         for i in range(len(rna)):
             rna[i] = encoder[rna[i]]
         X.append(rna)
         y.append(label)
+    #print(X[0])
     enc = OneHotEncoder(n_values=4)
     X = enc.fit_transform(X)
+    #print(X)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    model = xgb.XGBClassifier(n_jobs=-1, n_estimators=5000)
-    model.fit(X_train, y_train, eval_set=[(X_test, y_test)], eval_metric=['auc', 'logloss'], early_stopping_rounds=50)
-    pred = model.predict(X_test)
-    auc = roc_auc_score(y_test, pred)
-    loss = log_loss(y_test, pred)
-    fout.write(pot + "\tAUC:{:.4f}\tLogLoss:{:.4f}\n".format(auc, loss))
+    model = xgb.XGBClassifier(n_jobs=-1, n_estimators=10000, max_depth=4, learning_rate=1e-3)
+    model.fit(X_train, y_train, eval_set=[(X_train, y_train),(X_test, y_test)], eval_metric=['auc', 'error', 'logloss'], early_stopping_rounds=50)
+    # pred = model.predict_proba(X_test)
+    # auc = roc_auc_score(y_test, pred[:, 1])
+    # loss = log_loss(y_test, pred[:, 1])
+    index = model.best_iteration
+    auc = model.evals_result()['validation_1']['auc'][index]
+    loss = model.evals_result()['validation_1']['logloss'][index]
+    error = model.evals_result()['validation_1']['error'][index]
+    fout.write(pot + "\tAUC:{:.4f}\tLogLoss:{:.4f}\tError:{:.4f}\n".format(auc, loss, error))
     print('-' * 16 + pot + ' finish' + '-' * 16)
