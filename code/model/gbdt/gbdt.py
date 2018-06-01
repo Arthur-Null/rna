@@ -9,12 +9,12 @@ protein_list = ['AGO1', 'AGO2', 'AGO3', 'ALKBH5', 'AUF1', 'C17ORF85', 'C22ORF28'
                 'METTL3', 'MOV10', 'PTB', 'PUM2', 'QKI', 'SFRS1', 'TAF15', 'TDP43', 'TIA1', 'TIAL1', 'TNRC6', 'U2AF65',
                 'WTAP', 'ZC3H7B']
 
-encoder = {'A':0, 'G':1, 'C':2, 'T':3}
-
+encoder = {'A': 0, 'G': 1, 'C': 2, 'T': 3}
+fout = open('result', 'w')
 
 for pot in protein_list:
-    print('-'*20 + pot + '-'*20)
-    fin = open('../../dataset/RNA_trainset/' + pot + '/train')
+    print('-' * 20 + pot + '-' * 20)
+    fin = open('../../../dataset/RNA_trainset/' + pot + '/train')
     X = []
     y = []
     for line in fin.readlines():
@@ -28,8 +28,10 @@ for pot in protein_list:
     enc = OneHotEncoder(n_values=4)
     X = enc.fit_transform(X)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    model = xgb.XGBClassifier(n_jobs=-1)
+    model = xgb.XGBClassifier(n_jobs=-1, n_estimators=5000)
     model.fit(X_train, y_train, eval_set=[(X_test, y_test)], eval_metric=['auc', 'logloss'], early_stopping_rounds=50)
+    pred = model.predict(X_test)
+    auc = roc_auc_score(y_test, pred)
+    loss = log_loss(y_test, pred)
+    fout.write(pot + "\tAUC:{:.4f}\tLogLoss:{:.4f}\n".format(auc, loss))
     print('-' * 16 + pot + ' finish' + '-' * 16)
-
-
