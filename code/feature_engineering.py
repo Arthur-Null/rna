@@ -1,5 +1,5 @@
 import numpy as np
-
+import time
 protein_list = ['AGO1', 'AGO2', 'AGO3', 'ALKBH5', 'AUF1', 'C17ORF85', 'C22ORF28', 'CAPRIN1', 'DGCR8', 'EIF4A3', 'EWSR1',
                 'FMRP', 'FOX2', 'FUS', 'FXR1', 'FXR2', 'HNRNPC', 'HUR', 'IGF2BP1', 'IGF2BP2', 'IGF2BP3', 'LIN28A',
                 'LIN28B',
@@ -47,5 +47,33 @@ def get_data(data_path="../dataset/RNA_trainset/", positive=1, negative=0, unwat
     return all_rna, labels
 
 
+def get_data_sep(data_path="../dataset/RNA_trainset/", positive=1, negative=0):
+    rnas = []
+    labels = []
+    encoder = {'A': 0, 'G': 1, 'C': 2, 'T': 3}
+    for pot in protein_list:
+        print('-' * 20 + pot + '-' * 20)
+        replicate = set()
+        fin = open(data_path + pot + '/train')
+        X = []
+        y = []
+        for line in fin.readlines():
+            rna, label = line.split('\t')
+            if rna in replicate:
+                continue
+            else:
+                replicate.add(rna)
+            label = positive if int(label) == 1 else negative
+            rna = map(lambda x: encoder[x], list(rna))
+            X.append(rna)
+            y.append(label)
+        rnas.append(X)
+        labels.append(y)
+    return rnas, labels
+
 if __name__ == '__main__':
-    get_data()
+    start = time.time()
+    rnas, labels = get_data_sep()
+    end = time.time()
+    print(len(rnas[1]), len(labels[1]), end-start)
+
