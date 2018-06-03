@@ -1,4 +1,6 @@
 import numpy as np
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.model_selection import train_test_split
 import time
 protein_list = ['AGO1', 'AGO2', 'AGO3', 'ALKBH5', 'AUF1', 'C17ORF85', 'C22ORF28', 'CAPRIN1', 'DGCR8', 'EIF4A3', 'EWSR1',
                 'FMRP', 'FOX2', 'FUS', 'FXR1', 'FXR2', 'HNRNPC', 'HUR', 'IGF2BP1', 'IGF2BP2', 'IGF2BP3', 'LIN28A',
@@ -64,9 +66,11 @@ def get_data_sep(data_path="../dataset/RNA_trainset/", positive=1, negative=0):
             else:
                 replicate.add(rna)
             label = positive if int(label) == 1 else negative
-            rna = map(lambda x: encoder[x], list(rna))
+            rna = list(map(lambda x: encoder[x], rna))
             X.append(rna)
             y.append(label)
+        enc = OneHotEncoder(n_values=4)
+        X = enc.fit_transform(X)
         rnas.append(X)
         labels.append(y)
     return rnas, labels
