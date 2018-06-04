@@ -19,6 +19,7 @@ trainset = list(zip(X_train, y_train))
 testset = list(zip(X_test, y_test))
 print("Load dataset finished!")
 
+
 class Simple_Deep:
     def __init__(self, path, para, trainset, testset):
         self.graph = tf.Graph()
@@ -32,6 +33,7 @@ class Simple_Deep:
             self._define_inputs()
             self._build_graph()
             self.initializer = tf.global_variables_initializer()
+            self.local_initializer = tf.local_variables_initializer()
             self.saver = tf.train.Saver()
         self._initialize_session()
 
@@ -60,6 +62,7 @@ class Simple_Deep:
         self.sess = tf.Session(graph=self.graph, config=config)
 
         self.sess.run(self.initializer)
+        self.sess.run(self.local_initializer)
 
     def _define_inputs(self):
         self.input = tf.placeholder(
@@ -99,13 +102,29 @@ class Simple_Deep:
         self.loss = loss
 
         digit_prediction = tf.sign(self.prediction - self.predict_threshold)
-        weights = tf.sign(self.labels + 1)
-        self.test_accuracy = tf.metrics.accuracy(labels=self.labels, predictions=digit_prediction, weights=weights)
+        weights = tf.sign(tf.add(self.labels, 1))
+        [_, self.test_accuracy] = tf.metrics.accuracy(labels=self.labels, predictions=digit_prediction,
+                                                      weights=weights)
 
+    def test(self):
+        x, y = zip(*testset)
+        y = np.array(y)
+        mask = y != -1
+        mask = mask.astype(np.float32)
+        feed_dict = {
+            self.input: x,
+            self.labels: y,
+            self.mask: mask,
+            self.predict_threshold: 0,
+            self.keep_prob: 1
+        }
+        accuracy = self.sess.run(fetches=[self.test_accuracy], feed_dict=feed_dict)
+        return accuracy
 
     def train(self, batch_size, epoch):
         batch_per_epoch = int(len(self.trainset) / batch_size)
         start_position = 0
+        print("Initial accuracy {0}".format(self.test()))
         for e in range(epoch):
             for b in range(batch_per_epoch):
                 x, y = zip(*trainset[start_position: start_position + batch_size])
@@ -117,22 +136,17 @@ class Simple_Deep:
                     self.input: x,
                     self.labels: y,
                     self.mask: mask,
-                    self.keep_prob: 0.5
+                    self.keep_prob: 0.5,
+                    self.predict_threshold: 0
                 }
                 fetch = [self.trainstep, self.loss, self.prediction]
                 _, loss, pred = self.sess.run(fetch, feed_dict)
                 print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
-            x, y = zip(*testset)
-            feed_dict = {
-                self.input: x,
-                self.labels: y,
-                self.keep_prob: 1
-            }
-            accuracy = self.sess.run(fetches=[self.test_accuracy], feed_dict=feed_dict)
-            print("Test epoch {0} accuracy {1}".format(e, accuracy))
+
+            print("Test epoch {0} accuracy {1}".format(e, self.test()))
 
 
 if __name__ == '__main__':
-    para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': 1e-4}
+    para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': 1e-3}
     model = Simple_Deep('./model', para, trainset, testset)
     model.train(batch_size=100, epoch=5)
