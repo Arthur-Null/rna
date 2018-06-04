@@ -3,6 +3,7 @@ import sys
 sys.path.insert(0, "../../../")
 import tensorflow as tf
 import numpy as np
+import os
 
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
@@ -121,7 +122,7 @@ class Simple_Deep:
             self.predict_threshold: 0,
             self.keep_prob: 1
         }
-        accuracy = self.sess.run(fetches=[self.test_accuracy], feed_dict=feed_dict)
+        accuracy = self.sess.run(fetches=self.test_accuracy, feed_dict=feed_dict)
         return accuracy
 
     def train(self, batch_size, epoch):
@@ -129,7 +130,8 @@ class Simple_Deep:
         start_position = 0
         print("Initial accuracy {0}".format(self.test()))
         for e in range(epoch):
-            for b in range(batch_per_epoch - 1):
+            losses = []
+            for b in range(batch_per_epoch):
                 x, y = zip(*trainset[start_position: start_position + batch_size])
                 start_position += batch_size
                 y = np.array(y)
@@ -144,8 +146,9 @@ class Simple_Deep:
                 }
                 fetch = [self.trainstep, self.loss, self.prediction]
                 _, loss, pred = self.sess.run(fetch, feed_dict)
-                print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
-
+                losses.append(loss)
+                # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
+            print("Train epoch {0} loss {1}".format(e, np.mean(losses)))
             print("Test epoch {0} accuracy {1}".format(e, self.test()))
 
 
