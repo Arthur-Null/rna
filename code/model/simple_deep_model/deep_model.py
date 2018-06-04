@@ -129,7 +129,7 @@ class Simple_Deep:
         start_position = 0
         print("Initial accuracy {0}".format(self.test()))
         for e in range(epoch):
-            for b in range(batch_per_epoch):
+            for b in range(batch_per_epoch - 1):
                 x, y = zip(*trainset[start_position: start_position + batch_size])
                 start_position += batch_size
                 y = np.array(y)
