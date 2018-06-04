@@ -24,7 +24,16 @@ trainset = list(zip(X_train, y_train))
 testset = list(zip(X_test, y_test))
 print("Load dataset finished!")
 
-
+def cal_accuracy(label, pred, thethold=0.5):
+    total = 0.
+    match = 0.
+    for i in range(len(label)):
+        for j in range(len(label[i])):
+            if label[i][j] != -1:
+                total += 1
+                if label[i][j] == 0 and pred[i][j] < thethold or label[i][j] == 1 and pred[i][j] >= thethold:
+                    match += 1
+    return match/total
 class Simple_Deep:
     def __init__(self, path, para, trainset, testset):
         self.graph = tf.Graph()
@@ -134,6 +143,8 @@ class Simple_Deep:
         for e in range(epoch):
             start_position = 0
             losses = []
+            preds = []
+            labels = []
             for b in range(batch_per_epoch - 1):
                 x, y = zip(*trainset[start_position: start_position + batch_size])
                 start_position += batch_size
@@ -150,8 +161,10 @@ class Simple_Deep:
                 fetch = [self.trainstep, self.loss, self.prediction]
                 _, loss, pred = self.sess.run(fetch, feed_dict)
                 losses.append(loss)
+                labels += y
+                preds += pred
                 # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
-            print("Train epoch {0} loss {1}".format(e, np.mean(losses)))
+            print("Train epoch {0} loss {1} accuracy{2}".format(e, np.mean(losses), cal_accuracy(labels, preds)))
             print("Test epoch {0} accuracy {1}".format(e, self.test()))
 
 
