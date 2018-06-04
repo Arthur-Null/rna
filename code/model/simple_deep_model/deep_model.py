@@ -127,9 +127,10 @@ class Simple_Deep:
 
     def train(self, batch_size, epoch):
         batch_per_epoch = int(len(self.trainset) / batch_size)
-        start_position = 0
+
         print("Initial accuracy {0}".format(self.test()))
         for e in range(epoch):
+            start_position = 0
             losses = []
             for b in range(batch_per_epoch - 1):
                 print(start_position, batch_size)
