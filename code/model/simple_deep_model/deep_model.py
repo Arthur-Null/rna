@@ -121,31 +121,42 @@ class Simple_Deep:
         # self.test_accuracy = tf.contrib.metrics.accuracy(labels=self.labels, predictions=digit_prediction,
         #                                               weights=weights)
 
-    def test(self):
-        x, y = zip(*testset)
-        y = np.array(y)
-        mask = y != -1
-        mask = mask.astype(np.float32)
-        feed_dict = {
-            self.input: x,
-            self.labels: y,
-            self.mask: mask,
-            self.predict_threshold: 0,
-            self.keep_prob: 1
-        }
-        accuracy = self.sess.run(fetches=self.prediction, feed_dict=feed_dict)
-        return accuracy
+    def test(self, batch_size):
+        batch_per_epoch = int(len(self.testset) / batch_size)
+
+        start_position = 0
+        losses = []
+        preds = []
+        labels = []
+        for b in range(batch_per_epoch):
+            x, y = zip(*testset[start_position: start_position + batch_size])
+            start_position += batch_size
+            y = np.array(y)
+            mask = y != -1
+            mask = mask.astype(np.float32)
+            feed_dict = {
+                self.input: x,
+                self.labels: y,
+                self.mask: mask,
+                self.keep_prob: 0.5,
+                self.predict_threshold: 0
+            }
+            fetch = [self.loss, self.prediction]
+            loss, pred = self.sess.run(fetch, feed_dict)
+            losses.append(loss)
+            labels += y
+            preds += pred
+            # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
+        print("Test loss {0} accuracy {1}".format(np.mean(losses), cal_accuracy(labels, preds)))
 
     def train(self, batch_size, epoch):
         batch_per_epoch = int(len(self.trainset) / batch_size)
-
-        print("Initial accuracy {0}".format(self.test()))
         for e in range(epoch):
             start_position = 0
             losses = []
             preds = []
             labels = []
-            for b in range(batch_per_epoch - 1):
+            for b in range(batch_per_epoch):
                 x, y = zip(*trainset[start_position: start_position + batch_size])
                 start_position += batch_size
                 y = np.array(y)
@@ -164,9 +175,18 @@ class Simple_Deep:
                 labels += y
                 preds += pred
                 # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
+            model.save_model()
             print("Train epoch {0} loss {1} accuracy{2}".format(e, np.mean(losses), cal_accuracy(labels, preds)))
-            print("Test epoch {0} accuracy {1}".format(e, self.test()))
 
+    def load_model(self):
+        try:
+            self.saver.restore(self.sess, self.save_path)
+        except Exception:
+            raise IOError('Failed to load model from save path: %s' % self.save_path)
+        print('Successfully load model from save path: %s' % self.save_path)
+
+    def save_model(self, global_step=None):
+        self.saver.save(self.sess, self.save_path, global_step=global_step)
 
 if __name__ == '__main__':
     para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': 8e-3}
