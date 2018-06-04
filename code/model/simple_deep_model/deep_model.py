@@ -144,8 +144,8 @@ class Simple_Deep:
             fetch = [self.loss, self.prediction]
             loss, pred = self.sess.run(fetch, feed_dict)
             losses.append(loss)
-            labels += y
-            preds += pred
+            labels += y.tolist()
+            preds += pred.tolist()
             # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
         print("Test loss {0} accuracy {1}".format(np.mean(losses), cal_accuracy(labels, preds)))
 
@@ -172,8 +172,8 @@ class Simple_Deep:
                 fetch = [self.trainstep, self.loss, self.prediction]
                 _, loss, pred = self.sess.run(fetch, feed_dict)
                 losses.append(loss)
-                labels += y
-                preds += pred
+                labels += y.tolist()
+                preds += pred.tolist()
                 # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
             model.save_model()
             print("Train epoch {0} loss {1} accuracy{2}".format(e, np.mean(losses), cal_accuracy(labels, preds)))
