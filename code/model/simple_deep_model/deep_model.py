@@ -39,6 +39,7 @@ class Simple_Deep:
         self.graph = tf.Graph()
         self.prediction, self.trainstep, self.loss = None, None, None
         self._path = path
+        self._save_path, self._logs_path = None, None
         self.para = para
         self.trainset = trainset
         self.testset = testset
