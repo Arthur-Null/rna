@@ -105,9 +105,10 @@ class Simple_Deep:
         self.trainstep = optimizer.minimize(loss)
         self.loss = loss
 
-        digit_prediction = tf.sign(self.prediction - self.predict_threshold)
+        digit_prediction = tf.cast(tf.sign(tf.add(tf.sign(self.prediction - self.predict_threshold), 1)), tf.int64)
         weights = tf.sign(tf.add(self.labels, 1))
-        [_, self.test_accuracy] = tf.metrics.accuracy(labels=self.labels, predictions=digit_prediction,
+        self.labels = tf.cast(self.labels, tf.int64)
+        self.test_accuracy = tf.contrib.metrics.accuracy(labels=self.labels, predictions=digit_prediction,
                                                       weights=weights)
 
     def test(self):
@@ -154,6 +155,6 @@ class Simple_Deep:
 
 
 if __name__ == '__main__':
-    para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': 1e-3}
+    para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': 8e-3}
     model = Simple_Deep('./model', para, trainset, testset)
-    model.train(batch_size=100, epoch=5)
+    model.train(batch_size=1000, epoch=50)
