@@ -2,3 +2,4 @@
 .idea
 .idea/*
 *.py[cod]
+*test.py
