@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 from code.feature_engineering import get_data
 
 data, label = get_data(data_path="../../../dataset/RNA_trainset/")
+print(len(label))
 
 rnas = []
 for rna in data:
@@ -105,11 +106,11 @@ class Simple_Deep:
         self.trainstep = optimizer.minimize(loss)
         self.loss = loss
 
-        digit_prediction = tf.cast(tf.sign(tf.add(tf.sign(self.prediction - self.predict_threshold), 1)), tf.int64)
-        weights = tf.sign(tf.add(self.labels, 1))
-        self.labels = tf.cast(self.labels, tf.int64)
-        self.test_accuracy = tf.contrib.metrics.accuracy(labels=self.labels, predictions=digit_prediction,
-                                                      weights=weights)
+        # digit_prediction = tf.cast(tf.sign(tf.add(tf.sign(self.prediction - self.predict_threshold), 1)), tf.int64)
+        # weights = tf.sign(tf.add(self.labels, 1))
+        # self.labels = tf.cast(self.labels, tf.int64)
+        # self.test_accuracy = tf.contrib.metrics.accuracy(labels=self.labels, predictions=digit_prediction,
+        #                                               weights=weights)
 
     def test(self):
         x, y = zip(*testset)
@@ -123,7 +124,7 @@ class Simple_Deep:
             self.predict_threshold: 0,
             self.keep_prob: 1
         }
-        accuracy = self.sess.run(fetches=self.test_accuracy, feed_dict=feed_dict)
+        accuracy = self.sess.run(fetches=self.prediction, feed_dict=feed_dict)
         return accuracy
 
     def train(self, batch_size, epoch):
