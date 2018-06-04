@@ -22,7 +22,7 @@ testset = list(zip(X_test, y_test))
 class Simple_Deep:
     def __init__(self, path, para, trainset, testset):
         self.graph = tf.Graph()
-
+        self.prediction, self.trainstep, self.loss = None, None, None
         self._path = path
         self.para = para
         self.trainset = trainset
@@ -70,35 +70,50 @@ class Simple_Deep:
             shape=[None, self.para['label_dim']]
         )
         self.mask = tf.placeholder(
-            tf.int32,
+            tf.float32,
             shape=[None, self.para['label_dim']]
         )
         self.keep_prob = tf.placeholder(tf.float32, shape=[], name='keep_prob')
 
     def _build_graph(self):
         batchsize = tf.shape(self.input)[0]
-        x = tf.reshape(self.input, [batchsize, self.para['len'], -1, 1])
-        x = tf.transpose(x, [0, 2, 1, 3])
+        x = tf.reshape(self.input, [batchsize, self.para['len'], 4])
+        # x = tf.transpose(x, [0, 2, 1])
         # filter = tf.Variable(tf.random_normal([tf.shape(x)[1], 4, 1, 1]))
-        conv = tf.layers.conv2d(x, 5, kernel_size=(4, 4), activation=tf.nn.relu)
-        out = tf.layers.max_pooling2d(conv, pool_size=(1, 4), strides=4)
-        self.conv = out
+        conv = tf.layers.conv1d(x, 16, kernel_size=4, activation=tf.nn.relu)
+        out = tf.layers.max_pooling1d(conv, 3, strides=3)
+        cell_fw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
+        cell_bw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
+        output = tf.concat(tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, out, dtype=tf.float32)[0], 2)
+        len = int(output.shape[1]) - 1
+        output = tf.slice(output, [0, len, 0], [-1, 1, -1])
+        output = tf.reshape(output, [-1, 2 * self.para['hidden_size']])
+        output = tf.layers.dense(output, self.para['label_dim'])
+        self.prediction = tf.nn.sigmoid(output)
+        loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=output)
+        loss = tf.reduce_sum(tf.multiply(loss, self.mask)) / tf.reduce_sum(self.mask)
+        optimizer = tf.train.AdamOptimizer(self.para['lr'])
+        self.trainstep = optimizer.minimize(loss)
+        self.loss = loss
 
     def test(self):
         x, y = zip(*trainset[0:6])
+        y = np.array(y)
+        mask = y != -1
+        mask = mask.astype(np.float32)
         feed_dict = {
             self.input: x,
             self.labels: y,
-            self.mask: y,
+            self.mask: mask,
             self.keep_prob: 0.5
         }
-        fetch = self.conv
-        s = self.sess.run(fetch, feed_dict)
-        s = np.array(s)
-        print(s.shape)
+        fetch = [self.trainstep, self.loss, self.prediction]
+        _, loss, pred = self.sess.run(fetch, feed_dict)
+        print(loss)
+        print(pred)
 
 
 if __name__ == '__main__':
-    para = {'len': 300, 'label_dim': 37, 'dim': 1200}
+    para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': 1e-4}
     model = Simple_Deep('./model', para, trainset, testset)
     model.test()
