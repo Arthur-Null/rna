@@ -132,6 +132,7 @@ class Simple_Deep:
         for e in range(epoch):
             losses = []
             for b in range(batch_per_epoch - 1):
+                print(start_position, batch_size)
                 x, y = zip(*trainset[start_position: start_position + batch_size])
                 start_position += batch_size
                 y = np.array(y)
