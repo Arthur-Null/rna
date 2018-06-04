@@ -1,3 +1,6 @@
+import sys
+
+sys.path.insert(0, "../../../")
 import tensorflow as tf
 import numpy as np
 
