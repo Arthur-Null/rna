@@ -1,4 +1,7 @@
-"""sys.argv[1]: epoch"""
+"""sys.argv[1]: epoch
+   sys.argv[2]: train_batch_size
+   sys.argv[3]: test_batch_size
+"""
 import sys
 
 sys.path.insert(0, "../../../")
@@ -182,7 +185,7 @@ class Simple_Deep:
                 # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
             model.save_model()
             print("Train epoch {0} loss {1} accuracy {2}".format(e, np.mean(losses), cal_accuracy(labels, preds)))
-            self.test(batch_size)
+            self.test(int(sys.argv[3]))
 
     def load_model(self):
         try:
@@ -198,4 +201,4 @@ class Simple_Deep:
 if __name__ == '__main__':
     para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': 8e-3}
     model = Simple_Deep('./model', para, trainset, testset)
-    model.train(batch_size=1000, epoch=int(sys.argv[1]))
+    model.train(batch_size=int(sys.argv[2]), epoch=int(sys.argv[1]))
