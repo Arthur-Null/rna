@@ -24,6 +24,7 @@ trainset = list(zip(X_train, y_train))
 testset = list(zip(X_test, y_test))
 print("Load dataset finished!")
 
+
 def cal_accuracy(label, pred, thethold=0.5):
     total = 0.
     match = 0.
@@ -33,7 +34,9 @@ def cal_accuracy(label, pred, thethold=0.5):
                 total += 1
                 if label[i][j] == 0 and pred[i][j] < thethold or label[i][j] == 1 and pred[i][j] >= thethold:
                     match += 1
-    return match/total
+    return match / total
+
+
 class Simple_Deep:
     def __init__(self, path, para, trainset, testset):
         self.graph = tf.Graph()
@@ -189,6 +192,7 @@ class Simple_Deep:
 
     def save_model(self, global_step=None):
         self.saver.save(self.sess, self.save_path, global_step=global_step)
+
 
 if __name__ == '__main__':
     para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': 8e-3}
