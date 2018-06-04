@@ -177,7 +177,8 @@ class Simple_Deep:
                 preds += pred.tolist()
                 # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
             model.save_model()
-            print("Train epoch {0} loss {1} accuracy{2}".format(e, np.mean(losses), cal_accuracy(labels, preds)))
+            print("Train epoch {0} loss {1} accuracy {2}".format(e, np.mean(losses), cal_accuracy(labels, preds)))
+            self.test(batch_size)
 
     def load_model(self):
         try:
