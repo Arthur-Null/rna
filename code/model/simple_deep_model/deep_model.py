@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-import os
+
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 from code.feature_engineering import get_data
