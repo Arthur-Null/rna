@@ -111,6 +111,8 @@ class Simple_Deep:
         out = tf.layers.max_pooling1d(conv, 3, strides=3)
         cell_fw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
         cell_bw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
+        cell_fw = tf.contrib.rnn.DropoutWrapper(cell_fw, input_keep_preb=self.keep_prob, output_keep_prob=self.keep_prob)
+        cell_bw = tf.contrib.rnn.DropoutWrapper(cell_bw, input_keep_preb=self.keep_prob, output_keep_prob=self.keep_prob)
         output = tf.concat(tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, out, dtype=tf.float32)[0], 2)
         len = int(output.shape[1]) - 1
         output = tf.slice(output, [0, len, 0], [-1, 1, -1])
@@ -146,7 +148,7 @@ class Simple_Deep:
                 self.input: x,
                 self.labels: y,
                 self.mask: mask,
-                self.keep_prob: 0.5,
+                self.keep_prob: 1,
                 self.predict_threshold: 0
             }
             fetch = [self.loss, self.prediction]
