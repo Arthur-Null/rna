@@ -131,6 +131,8 @@ class Simple_Deep:
                                                 output_keep_prob=self.keep_prob)
         cell_bw = tf.contrib.rnn.DropoutWrapper(cell_bw, input_keep_prob=self.keep_prob,
                                                 output_keep_prob=self.keep_prob)
+        cell_fw = tf.contrib.rnn.AttentionCellWrapper(cell_fw, attn_length=20)
+        cell_bw = tf.contrib.rnn.AttentionCellWrapper(cell_bw, attn_length=20)
         output = tf.concat(tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, out, dtype=tf.float32)[0], 2)
         len = int(output.shape[1]) - 1
         output = tf.slice(output, [0, len, 0], [-1, 1, -1])
@@ -139,6 +141,10 @@ class Simple_Deep:
         self.prediction = tf.nn.sigmoid(output)
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=output)
         loss = tf.reduce_sum(tf.multiply(loss, self.mask)) / tf.reduce_sum(self.mask)
+        weights = tf.trainable_variables()
+        l1_reg = tf.contrib.layers.l1_regularizer(scale=0.005)
+        regularization_penalty = tf.contrib.layers.apply_regularization(l1_reg, weights)
+        loss += regularization_penalty
         optimizer = tf.train.AdamOptimizer(self.para['lr'])
         self.trainstep = optimizer.minimize(loss)
         self.loss = loss
