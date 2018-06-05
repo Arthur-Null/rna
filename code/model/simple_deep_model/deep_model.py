@@ -183,9 +183,11 @@ class Simple_Deep:
             # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
         print("Test loss {0} accuracy {1} auc {2}".format(np.mean(losses), cal_accuracy(labels, preds),
                                                           ave_auc(labels, preds)))
+        return ave_auc(labels, preds)
 
     def train(self, batch_size, epoch):
         batch_per_epoch = int(len(self.trainset) / batch_size)
+        max = 0
         for e in range(epoch):
             start_position = 0
             losses = []
@@ -210,11 +212,13 @@ class Simple_Deep:
                 labels += y.tolist()
                 preds += pred.tolist()
                 # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
-            model.save_model()
             print(
                 "Train epoch {0} loss {1} accuracy {2} auc {3}".format(e, np.mean(losses), cal_accuracy(labels, preds),
                                                                        ave_auc(labels, preds)))
-            self.test(int(sys.argv[3]))
+            result = self.test(int(sys.argv[3]))
+            if result > max:
+                model.save_model()
+                max = result
 
     def load_model(self):
         try:
