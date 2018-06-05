@@ -141,6 +141,10 @@ class Simple_Deep:
         self.prediction = tf.nn.sigmoid(output)
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=output)
         loss = tf.reduce_sum(tf.multiply(loss, self.mask)) / tf.reduce_sum(self.mask)
+        weights = tf.trainable_variables()
+        l1_reg = tf.contrib.layers.l1_regularizer(scale=0.005)
+        regularization_penalty = tf.contrib.layers.apply_regularization(l1_reg, weights)
+        loss += regularization_penalty
         optimizer = tf.train.AdamOptimizer(self.para['lr'])
         self.trainstep = optimizer.minimize(loss)
         self.loss = loss
