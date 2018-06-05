@@ -123,9 +123,9 @@ class Simple_Deep:
         # x = tf.transpose(x, [0, 2, 1])
         # filter = tf.Variable(tf.random_normal([tf.shape(x)[1], 4, 1, 1]))
         conv = tf.layers.conv1d(x, 8, kernel_size=4, activation=tf.nn.relu)
-        conv = tf.layers.conv1d(conv, 16, kernel_size=1, activation=tf.nn.relu)
         out = tf.layers.max_pooling1d(conv, 3, strides=3)
         out = tf.nn.dropout(out, self.keep_prob)
+        print(out.shape)
         cell_fw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
         cell_bw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
         cell_fw = tf.contrib.rnn.DropoutWrapper(cell_fw, input_keep_prob=self.keep_prob,
@@ -133,9 +133,12 @@ class Simple_Deep:
         cell_bw = tf.contrib.rnn.DropoutWrapper(cell_bw, input_keep_prob=self.keep_prob,
                                                 output_keep_prob=self.keep_prob)
         output = tf.concat(tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, out, dtype=tf.float32)[0], 2)
+        print(output.shape)
         len = int(output.shape[1]) - 1
         output = tf.slice(output, [0, len, 0], [-1, 1, -1])
         output = tf.reshape(output, [-1, 2 * self.para['hidden_size']])
+        print(output.shape)
+        output = tf.layers.dense(output, 128)
         output = tf.layers.dense(output, self.para['label_dim'])
         self.prediction = tf.nn.sigmoid(output)
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=output)
