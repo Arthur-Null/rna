@@ -11,6 +11,7 @@ import os
 
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import *
 from code.feature_engineering import get_data
 
 data, label = get_data(data_path="../../../dataset/RNA_trainset/")
@@ -39,6 +40,20 @@ def cal_accuracy(label, pred, thethold=0.5):
                 if label[i][j] == 0 and pred[i][j] < thethold or label[i][j] == 1 and pred[i][j] >= thethold:
                     match += 1
     return match / total
+
+
+def ave_auc(label, pred):
+    auc = []
+    l = [[]] * 37
+    p = [[]] * 37
+    for i in range(len(label)):
+        for j in range(len(label[i])):
+            if label[i][j] != -1:
+                l[j].append(label[i][j])
+                p[j].append(pred[i][j])
+    for i in range(37):
+        auc.append(roc_auc_score(l[i], p[i]))
+    return np.mean(auc)
 
 
 class Simple_Deep:
@@ -109,8 +124,13 @@ class Simple_Deep:
         # filter = tf.Variable(tf.random_normal([tf.shape(x)[1], 4, 1, 1]))
         conv = tf.layers.conv1d(x, 16, kernel_size=4, activation=tf.nn.relu)
         out = tf.layers.max_pooling1d(conv, 3, strides=3)
+        out = tf.nn.dropout(out, self.keep_prob)
         cell_fw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
         cell_bw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
+        cell_fw = tf.contrib.rnn.DropoutWrapper(cell_fw, input_keep_prob=self.keep_prob,
+                                                output_keep_prob=self.keep_prob)
+        cell_bw = tf.contrib.rnn.DropoutWrapper(cell_bw, input_keep_prob=self.keep_prob,
+                                                output_keep_prob=self.keep_prob)
         output = tf.concat(tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, out, dtype=tf.float32)[0], 2)
         len = int(output.shape[1]) - 1
         output = tf.slice(output, [0, len, 0], [-1, 1, -1])
@@ -146,7 +166,7 @@ class Simple_Deep:
                 self.input: x,
                 self.labels: y,
                 self.mask: mask,
-                self.keep_prob: 0.5,
+                self.keep_prob: 1,
                 self.predict_threshold: 0
             }
             fetch = [self.loss, self.prediction]
@@ -155,7 +175,8 @@ class Simple_Deep:
             labels += y.tolist()
             preds += pred.tolist()
             # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
-        print("Test loss {0} accuracy {1}".format(np.mean(losses), cal_accuracy(labels, preds)))
+        print("Test loss {0} accuracy {1} auc {2}".format(np.mean(losses), cal_accuracy(labels, preds),
+                                                          ave_auc(labels, preds)))
 
     def train(self, batch_size, epoch):
         batch_per_epoch = int(len(self.trainset) / batch_size)
@@ -184,7 +205,9 @@ class Simple_Deep:
                 preds += pred.tolist()
                 # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
             model.save_model()
-            print("Train epoch {0} loss {1} accuracy {2}".format(e, np.mean(losses), cal_accuracy(labels, preds)))
+            print(
+                "Train epoch {0} loss {1} accuracy {2} auc {3}".format(e, np.mean(losses), cal_accuracy(labels, preds),
+                                                                       ave_auc(labels, preds)))
             self.test(int(sys.argv[3]))
 
     def load_model(self):
@@ -199,6 +222,6 @@ class Simple_Deep:
 
 
 if __name__ == '__main__':
-    para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': 8e-3}
+    para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': float(sys.argv[4])}
     model = Simple_Deep('./model', para, trainset, testset)
     model.train(batch_size=int(sys.argv[2]), epoch=int(sys.argv[1]))

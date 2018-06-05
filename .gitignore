@@ -3,3 +3,4 @@
 .idea/*
 *.py[cod]
 *test.py
+*checkpoint/*
