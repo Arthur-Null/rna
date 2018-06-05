@@ -1,4 +1,7 @@
-"""sys.argv[1]: epoch"""
+"""sys.argv[1]: epoch
+   sys.argv[2]: train_batch_size
+   sys.argv[3]: test_batch_size
+"""
 import sys
 
 sys.path.insert(0, "../../../")
@@ -109,6 +112,8 @@ class Simple_Deep:
         out = tf.nn.dropout(out, self.keep_prob)
         cell_fw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
         cell_bw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
+        cell_fw = tf.contrib.rnn.DropoutWrapper(cell_fw, input_keep_preb=self.keep_prob, output_keep_prob=self.keep_prob)
+        cell_bw = tf.contrib.rnn.DropoutWrapper(cell_bw, input_keep_preb=self.keep_prob, output_keep_prob=self.keep_prob)
         output = tf.concat(tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, out, dtype=tf.float32)[0], 2)
         len = int(output.shape[1]) - 1
         output = tf.slice(output, [0, len, 0], [-1, 1, -1])
@@ -183,7 +188,7 @@ class Simple_Deep:
                 # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
             model.save_model()
             print("Train epoch {0} loss {1} accuracy {2}".format(e, np.mean(losses), cal_accuracy(labels, preds)))
-            self.test(batch_size)
+            self.test(int(sys.argv[3]))
 
     def load_model(self):
         try:
@@ -199,4 +204,4 @@ class Simple_Deep:
 if __name__ == '__main__':
     para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': 8e-3}
     model = Simple_Deep('./model', para, trainset, testset)
-    model.train(batch_size=1000, epoch=int(sys.argv[1]))
+    model.train(batch_size=int(sys.argv[2]), epoch=int(sys.argv[1]))
