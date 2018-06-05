@@ -184,7 +184,7 @@ class Simple_Deep:
             # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
         print("Test loss {0} accuracy {1} auc {2}".format(np.mean(losses), cal_accuracy(labels, preds),
                                                           ave_auc(labels, preds)))
-        f = open(self._logs_path, 'a')
+        f = open(self.logs_path, 'a')
         f.write("Test loss {0} accuracy {1} auc {2}".format(np.mean(losses), cal_accuracy(labels, preds),
                                                           ave_auc(labels, preds)))
 
@@ -220,7 +220,7 @@ class Simple_Deep:
             print(
                 "Train epoch {0} loss {1} accuracy {2} auc {3}".format(e, np.mean(losses), cal_accuracy(labels, preds),
                                                                        ave_auc(labels, preds)))
-            f = open(self._logs_path, 'a')
+            f = open(self.logs_path, 'a')
             f.write("Train epoch {0} loss {1} accuracy {2} auc {3}".format(e, np.mean(losses), cal_accuracy(labels, preds),
                                                                        ave_auc(labels, preds)))
             result = self.test(int(sys.argv[3]))
