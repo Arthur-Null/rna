@@ -8,6 +8,7 @@ sys.path.insert(0, "../../../")
 import tensorflow as tf
 import numpy as np
 import os
+import time
 
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
@@ -87,7 +88,7 @@ class Simple_Deep:
     @property
     def logs_path(self):
         if self._logs_path is None:
-            logs_path = '%s/logs' % self._path
+            logs_path = '%s/%s' % (self._path, str(time.time()))
             if not os.path.exists(logs_path):
                 os.makedirs(logs_path)
             self._logs_path = logs_path
@@ -183,6 +184,10 @@ class Simple_Deep:
             # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
         print("Test loss {0} accuracy {1} auc {2}".format(np.mean(losses), cal_accuracy(labels, preds),
                                                           ave_auc(labels, preds)))
+        f = open(self._logs_path, 'a')
+        f.write("Test loss {0} accuracy {1} auc {2}".format(np.mean(losses), cal_accuracy(labels, preds),
+                                                          ave_auc(labels, preds)))
+
         return ave_auc(labels, preds)
 
     def train(self, batch_size, epoch):
@@ -214,6 +219,9 @@ class Simple_Deep:
                 # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
             print(
                 "Train epoch {0} loss {1} accuracy {2} auc {3}".format(e, np.mean(losses), cal_accuracy(labels, preds),
+                                                                       ave_auc(labels, preds)))
+            f = open(self._logs_path, 'a')
+            f.write("Train epoch {0} loss {1} accuracy {2} auc {3}".format(e, np.mean(losses), cal_accuracy(labels, preds),
                                                                        ave_auc(labels, preds)))
             result = self.test(int(sys.argv[3]))
             if result > max:
