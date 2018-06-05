@@ -131,6 +131,8 @@ class Simple_Deep:
                                                 output_keep_prob=self.keep_prob)
         cell_bw = tf.contrib.rnn.DropoutWrapper(cell_bw, input_keep_prob=self.keep_prob,
                                                 output_keep_prob=self.keep_prob)
+        cell_fw = tf.contrib.rnn.AttentionCellWrapper(cell_fw, attn_length=20)
+        cell_bw = tf.contrib.rnn.AttentionCellWrapper(cell_bw, attn_length=20)
         output = tf.concat(tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, out, dtype=tf.float32)[0], 2)
         len = int(output.shape[1]) - 1
         output = tf.slice(output, [0, len, 0], [-1, 1, -1])
