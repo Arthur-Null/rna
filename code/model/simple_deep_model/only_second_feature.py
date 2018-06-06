@@ -26,7 +26,7 @@ for seq in all_seq:
     seqs.append(seq)
 enc = OneHotEncoder(3)
 seqs = enc.fit_transform(seqs).toarray()
-#print(enc.active_features_)
+# print(enc.active_features_)
 for seq in seqs:
     if len(seq) != 900:
         print(len(seq))
@@ -132,19 +132,19 @@ class Simple_Deep:
         self.keep_prob = tf.placeholder(tf.float32, shape=[], name='keep_prob')
         self.predict_threshold = tf.placeholder(tf.float32, shape=[], name='threshold')
 
-
     def graph_seqs(self, batchsize):
         with tf.name_scope("seqs") as scope:
             x = tf.reshape(self.seq, [batchsize, self.para['dim2'], 1])
             cell_fw2 = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
             cell_bw2 = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
             cell_fw2 = tf.contrib.rnn.DropoutWrapper(cell_fw2, input_keep_prob=self.keep_prob,
-                                                    output_keep_prob=self.keep_prob)
+                                                     output_keep_prob=self.keep_prob)
             cell_bw2 = tf.contrib.rnn.DropoutWrapper(cell_bw2, input_keep_prob=self.keep_prob,
-                                                    output_keep_prob=self.keep_prob)
+                                                     output_keep_prob=self.keep_prob)
             cell_fw2 = tf.contrib.rnn.AttentionCellWrapper(cell_fw2, attn_length=20)
             cell_bw2 = tf.contrib.rnn.AttentionCellWrapper(cell_bw2, attn_length=20)
-            output = tf.concat(tf.nn.bidirectional_dynamic_rnn(cell_fw2, cell_bw2, x, dtype=tf.float32, scope=scope)[0], 2)
+            output = tf.concat(tf.nn.bidirectional_dynamic_rnn(cell_fw2, cell_bw2, x, dtype=tf.float32, scope=scope)[0],
+                               2)
             len = int(output.shape[1]) - 1
             output = tf.slice(output, [0, len, 0], [-1, 1, -1])
             output = tf.reshape(output, [-1, 2 * self.para['hidden_size']])
@@ -184,7 +184,7 @@ class Simple_Deep:
         labels = []
         for b in range(batch_per_epoch):
             x, y = zip(*testset[start_position: start_position + batch_size])
-            [_, seqs, energies] = zip(*x)
+            [seqs, energies] = zip(*x)
             start_position += batch_size
             y = np.array(y)
             mask = y != -1
@@ -207,7 +207,7 @@ class Simple_Deep:
                                                           ave_auc(labels, preds)))
         f = open(self.logs_path + '/log', 'a')
         f.write("Test loss {0} accuracy {1} auc {2}".format(np.mean(losses), cal_accuracy(labels, preds),
-                                                          ave_auc(labels, preds)))
+                                                            ave_auc(labels, preds)))
 
         return ave_auc(labels, preds)
 
@@ -221,7 +221,7 @@ class Simple_Deep:
             labels = []
             for b in range(batch_per_epoch):
                 x, y = zip(*trainset[start_position: start_position + batch_size])
-                [_, seqs, energies] = zip(*x)
+                [seqs, energies] = zip(*x)
                 start_position += batch_size
                 y = np.array(y)
                 mask = y != -1
@@ -244,7 +244,8 @@ class Simple_Deep:
                 "Train epoch {0} loss {1} accuracy {2} auc {3}".format(e, np.mean(losses), cal_accuracy(labels, preds),
                                                                        ave_auc(labels, preds)))
             f = open(self.logs_path + '/log', 'a')
-            f.write("Train epoch {0} loss {1} accuracy {2} auc {3}".format(e, np.mean(losses), cal_accuracy(labels, preds),
+            f.write(
+                "Train epoch {0} loss {1} accuracy {2} auc {3}".format(e, np.mean(losses), cal_accuracy(labels, preds),
                                                                        ave_auc(labels, preds)))
             result = self.test(int(sys.argv[3]))
             if result > max:
