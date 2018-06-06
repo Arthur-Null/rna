@@ -13,19 +13,38 @@ import time
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import *
-from code.feature_engineering import get_data
+from code.feature_engineering import get_data_2
 
-data, label = get_data(data_path="../../../dataset/RNA_trainset/")
+original_rnas, all_seq, label, energies = get_data_2("../../../dataset/RNA_trainset2/")
 print(len(label))
 
 rnas = []
-for rna in data:
+for rna in original_rnas:
     encoder = {'A': 0, 'G': 1, 'C': 2, 'T': 3}
     rna = list(map(lambda x: encoder[x], rna))
     rnas.append(rna)
 enc = OneHotEncoder()
 rnas = enc.fit_transform(rnas).toarray()
-X_train, X_test, y_train, y_test = train_test_split(rnas, label, test_size=0.2, random_state=42)
+for rna in rnas:
+    assert len(rna) == 1200
+
+seqs = []
+for seq in all_seq:
+    assert len(seq) == 300
+    encoder = {'(': 0, '.': 1, ')': 2}
+    seq = list(map(lambda x: encoder[x], seq))
+    seqs.append(seq)
+enc = OneHotEncoder(3)
+seqs = enc.fit_transform(seqs).toarray()
+#print(enc.active_features_)
+for seq in seqs:
+    if len(seq) != 900:
+        print(len(seq))
+        print(seq)
+    # assert len(seq) == 900
+
+data = list(zip(rnas, seqs, energies))
+X_train, X_test, y_train, y_test = train_test_split(data, label, test_size=0.2, random_state=42)
 trainset = list(zip(X_train, y_train))
 testset = list(zip(X_test, y_test))
 print("Load dataset finished!")
@@ -115,30 +134,43 @@ class Simple_Deep:
             tf.float32,
             shape=[None, self.para['label_dim']]
         )
+
+        self.seq = tf.placeholder(
+            tf.float32,
+            shape=[None, self.para['dim2']]
+        )
+        self.energies = tf.placeholder(
+            tf.float32,
+            shape=[None]
+        )
         self.keep_prob = tf.placeholder(tf.float32, shape=[], name='keep_prob')
         self.predict_threshold = tf.placeholder(tf.float32, shape=[], name='threshold')
 
+
+    def graph_seqs(self, batchsize):
+        with tf.name_scope("seqs") as scope:
+            x = tf.reshape(self.seq, [batchsize, self.para['dim2'], 1])
+            cell_fw2 = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
+            cell_bw2 = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
+            cell_fw2 = tf.contrib.rnn.DropoutWrapper(cell_fw2, input_keep_prob=self.keep_prob,
+                                                    output_keep_prob=self.keep_prob)
+            cell_bw2 = tf.contrib.rnn.DropoutWrapper(cell_bw2, input_keep_prob=self.keep_prob,
+                                                    output_keep_prob=self.keep_prob)
+            cell_fw2 = tf.contrib.rnn.AttentionCellWrapper(cell_fw2, attn_length=20)
+            cell_bw2 = tf.contrib.rnn.AttentionCellWrapper(cell_bw2, attn_length=20)
+            output = tf.concat(tf.nn.bidirectional_dynamic_rnn(cell_fw2, cell_bw2, x, dtype=tf.float32, scope=scope)[0], 2)
+            len = int(output.shape[1]) - 1
+            output = tf.slice(output, [0, len, 0], [-1, 1, -1])
+            output = tf.reshape(output, [-1, 2 * self.para['hidden_size']])
+
+            assert output.shape[1] == 2 * self.para['hidden_size']
+            return output
+
     def _build_graph(self):
         batchsize = tf.shape(self.input)[0]
-        x = tf.reshape(self.input, [batchsize, self.para['len'], 4, 1])
-        # x = tf.transpose(x, [0, 2, 1])
-        # filter = tf.Variable(tf.random_normal([tf.shape(x)[1], 4, 1, 1]))
-        conv = tf.layers.conv2d(x, 16, kernel_size=[4, 4], activation=tf.nn.relu)
-        conv = tf.reshape(conv, [batchsize, conv.shape[1], conv.shape[3]])
-        out = tf.layers.max_pooling1d(conv, 3, strides=3)
-        out = tf.nn.dropout(out, self.keep_prob)
-        cell_fw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
-        cell_bw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
-        cell_fw = tf.contrib.rnn.DropoutWrapper(cell_fw, input_keep_prob=self.keep_prob,
-                                                output_keep_prob=self.keep_prob)
-        cell_bw = tf.contrib.rnn.DropoutWrapper(cell_bw, input_keep_prob=self.keep_prob,
-                                                output_keep_prob=self.keep_prob)
-        cell_fw = tf.contrib.rnn.AttentionCellWrapper(cell_fw, attn_length=20)
-        cell_bw = tf.contrib.rnn.AttentionCellWrapper(cell_bw, attn_length=20)
-        output = tf.concat(tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, out, dtype=tf.float32)[0], 2)
-        len = int(output.shape[1]) - 1
-        output = tf.slice(output, [0, len, 0], [-1, 1, -1])
-        output = tf.reshape(output, [-1, 2 * self.para['hidden_size']])
+
+        output = self.graph_seqs(batchsize)
+
         output = tf.layers.dense(output, self.para['label_dim'])
         self.prediction = tf.nn.sigmoid(output)
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=output)
@@ -166,12 +198,15 @@ class Simple_Deep:
         labels = []
         for b in range(batch_per_epoch):
             x, y = zip(*testset[start_position: start_position + batch_size])
+            [rnas, seqs, energies] = zip(*x)
             start_position += batch_size
             y = np.array(y)
             mask = y != -1
             mask = mask.astype(np.float32)
             feed_dict = {
-                self.input: x,
+                self.input: rnas,
+                self.seq: seqs,
+                self.energies: energies,
                 self.labels: y,
                 self.mask: mask,
                 self.keep_prob: 1,
@@ -201,12 +236,15 @@ class Simple_Deep:
             labels = []
             for b in range(batch_per_epoch):
                 x, y = zip(*trainset[start_position: start_position + batch_size])
+                [rnas, seqs, energies] = zip(*x)
                 start_position += batch_size
                 y = np.array(y)
                 mask = y != -1
                 mask = mask.astype(np.float32)
                 feed_dict = {
-                    self.input: x,
+                    self.input: rnas,
+                    self.seq: seqs,
+                    self.energies: energies,
                     self.labels: y,
                     self.mask: mask,
                     self.keep_prob: 0.5,
@@ -241,6 +279,6 @@ class Simple_Deep:
 
 
 if __name__ == '__main__':
-    para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': float(sys.argv[4])}
+    para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'dim2': 900, 'hidden_size': 256, 'lr': float(sys.argv[4])}
     model = Simple_Deep('./model', para, trainset, testset)
     model.train(batch_size=int(sys.argv[2]), epoch=int(sys.argv[1]))
