@@ -162,9 +162,9 @@ class Simple_Deep:
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=output)
         loss = tf.reduce_sum(tf.multiply(loss, self.mask)) / tf.reduce_sum(self.mask)
         weights = tf.trainable_variables()
-        l1_reg = tf.contrib.layers.l1_regularizer(scale=5e-6)
-        regularization_penalty = tf.contrib.layers.apply_regularization(l1_reg, weights)
-        loss += regularization_penalty
+        # l1_reg = tf.contrib.layers.l1_regularizer(scale=5e-6)
+        # regularization_penalty = tf.contrib.layers.apply_regularization(l1_reg, weights)
+        # loss += regularization_penalty
         optimizer = tf.train.AdamOptimizer(self.para['lr'])
         self.trainstep = optimizer.minimize(loss)
         self.loss = loss
@@ -264,6 +264,6 @@ class Simple_Deep:
 
 
 if __name__ == '__main__':
-    para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': float(sys.argv[4]), 'sdim': 1800}
+    para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 512, 'lr': float(sys.argv[4]), 'sdim': 1800}
     model = Simple_Deep('./model_second', para, trainset, testset)
     model.train(batch_size=int(sys.argv[2]), epoch=int(sys.argv[1]))
