@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split
 import time
+
 protein_list = ['AGO1', 'AGO2', 'AGO3', 'ALKBH5', 'AUF1', 'C17ORF85', 'C22ORF28', 'CAPRIN1', 'DGCR8', 'EIF4A3', 'EWSR1',
                 'FMRP', 'FOX2', 'FUS', 'FXR1', 'FXR2', 'HNRNPC', 'HUR', 'IGF2BP1', 'IGF2BP2', 'IGF2BP3', 'LIN28A',
                 'LIN28B',
@@ -143,6 +144,7 @@ def get_data_2(data_path="../dataset/RNA_trainset2/", positive=1, negative=0, un
     assert labels.shape == (len(all_rna), number_of_protein)
     return all_rna, all_seq, labels, energies
 
+
 def cal_accuracy(label, pred, thethold=0.5):
     aucs = []
     for i in range(len(label)):
@@ -157,10 +159,8 @@ def cal_accuracy(label, pred, thethold=0.5):
     return aucs
 
 
-
 if __name__ == '__main__':
     start = time.time()
     rnas, all_seq, labels, energies = get_data_2()
     end = time.time()
-    print(len(rnas[1]), len(labels[1]), end-start, len(all_seq), len(energies), len(rnas))
-
+    print(len(rnas[1]), len(labels[1]), end - start, len(all_seq), len(energies), len(rnas))
