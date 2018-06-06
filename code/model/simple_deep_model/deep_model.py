@@ -8,6 +8,7 @@ sys.path.insert(0, "../../../")
 import tensorflow as tf
 import numpy as np
 import os
+import time
 
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
@@ -87,7 +88,7 @@ class Simple_Deep:
     @property
     def logs_path(self):
         if self._logs_path is None:
-            logs_path = '%s/logs' % self._path
+            logs_path = '%s/%s' % (self._path, str(time.time()))
             if not os.path.exists(logs_path):
                 os.makedirs(logs_path)
             self._logs_path = logs_path
@@ -142,7 +143,7 @@ class Simple_Deep:
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=output)
         loss = tf.reduce_sum(tf.multiply(loss, self.mask)) / tf.reduce_sum(self.mask)
         weights = tf.trainable_variables()
-        l1_reg = tf.contrib.layers.l1_regularizer(scale=0.005)
+        l1_reg = tf.contrib.layers.l1_regularizer(scale=5e-6)
         regularization_penalty = tf.contrib.layers.apply_regularization(l1_reg, weights)
         loss += regularization_penalty
         optimizer = tf.train.AdamOptimizer(self.para['lr'])
@@ -183,9 +184,15 @@ class Simple_Deep:
             # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
         print("Test loss {0} accuracy {1} auc {2}".format(np.mean(losses), cal_accuracy(labels, preds),
                                                           ave_auc(labels, preds)))
+        f = open(self.logs_path + '/log', 'a')
+        f.write("Test loss {0} accuracy {1} auc {2}".format(np.mean(losses), cal_accuracy(labels, preds),
+                                                          ave_auc(labels, preds)))
+
+        return ave_auc(labels, preds)
 
     def train(self, batch_size, epoch):
         batch_per_epoch = int(len(self.trainset) / batch_size)
+        max = 0
         for e in range(epoch):
             start_position = 0
             losses = []
@@ -210,11 +217,16 @@ class Simple_Deep:
                 labels += y.tolist()
                 preds += pred.tolist()
                 # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
-            model.save_model()
             print(
                 "Train epoch {0} loss {1} accuracy {2} auc {3}".format(e, np.mean(losses), cal_accuracy(labels, preds),
                                                                        ave_auc(labels, preds)))
-            self.test(int(sys.argv[3]))
+            f = open(self.logs_path + '/log', 'a')
+            f.write("Train epoch {0} loss {1} accuracy {2} auc {3}".format(e, np.mean(losses), cal_accuracy(labels, preds),
+                                                                       ave_auc(labels, preds)))
+            result = self.test(int(sys.argv[3]))
+            if result > max:
+                model.save_model()
+                max = result
 
     def load_model(self):
         try:
