@@ -16,16 +16,28 @@ from sklearn.metrics import *
 from code.feature_engineering import get_data
 
 data, label = get_data(data_path="../../../dataset/RNA_trainset/")
-print(len(label))
+dic = {}
+for line in open('../../../dataset/second_strcuture', 'r').readlines():
+    rna, second = line.split('\t')
+    dic[rna] = second[:-1]
 
 rnas = []
+seconds = []
 for rna in data:
     encoder = {'A': 0, 'G': 1, 'C': 2, 'T': 3}
+    encoder_sec = {'S': 0, 'M': 1, 'H': 2, 'I': 3, 'T': 4, 'F': 5}
+    second = dic[rna]
+    second = list(map(lambda x: encoder_sec[x], second))
     rna = list(map(lambda x: encoder[x], rna))
     rnas.append(rna)
-enc = OneHotEncoder()
+
+    seconds.append(second)
+enc = OneHotEncoder(4)
 rnas = enc.fit_transform(rnas).toarray()
-X_train, X_test, y_train, y_test = train_test_split(rnas, label, test_size=0.2, random_state=42)
+enc2 = OneHotEncoder(6)
+seconds = enc2.fit_transform(seconds).toarray()
+data = list(zip(rnas, seconds))
+X_train, X_test, y_train, y_test = train_test_split(data, label, test_size=0.2, random_state=42)
 trainset = list(zip(X_train, y_train))
 testset = list(zip(X_test, y_test))
 print("Load dataset finished!")
@@ -107,6 +119,10 @@ class Simple_Deep:
             tf.float32,
             shape=[None, self.para['dim']]
         )
+        self.input_s = tf.placeholder(
+            tf.float32,
+            shape=[None, self.para['sdim']]
+        )
         self.labels = tf.placeholder(
             tf.float32,
             shape=[None, self.para['label_dim']]
@@ -121,11 +137,14 @@ class Simple_Deep:
     def _build_graph(self):
         batchsize = tf.shape(self.input)[0]
         x = tf.reshape(self.input, [batchsize, self.para['len'], 4])
-        # x = tf.transpose(x, [0, 2, 1])
-        # filter = tf.Variable(tf.random_normal([tf.shape(x)[1], 4, 1, 1]))
+        x_s = tf.reshape(self.input_s, [batchsize, self.para['len'], 5])
+        conv_s = tf.layers.conv1d(x_s, 16, kernel_size=4, activation=tf.nn.relu)
         conv = tf.layers.conv1d(x, 16, kernel_size=4, activation=tf.nn.relu)
         out = tf.layers.max_pooling1d(conv, 3, strides=3)
+        out_s = tf.layers.max_pooling1d(conv_s, 3, strides=3)
         out = tf.nn.dropout(out, self.keep_prob)
+        out_s = tf.nn.dropout(out, self.keep_prob)
+        out = tf.concat([out, out_s], -1)
         cell_fw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
         cell_bw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
         cell_fw = tf.contrib.rnn.DropoutWrapper(cell_fw, input_keep_prob=self.keep_prob,
@@ -143,9 +162,9 @@ class Simple_Deep:
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=output)
         loss = tf.reduce_sum(tf.multiply(loss, self.mask)) / tf.reduce_sum(self.mask)
         weights = tf.trainable_variables()
-        l1_reg = tf.contrib.layers.l1_regularizer(scale=5e-6)
-        regularization_penalty = tf.contrib.layers.apply_regularization(l1_reg, weights)
-        loss += regularization_penalty
+        # l1_reg = tf.contrib.layers.l1_regularizer(scale=5e-6)
+        # regularization_penalty = tf.contrib.layers.apply_regularization(l1_reg, weights)
+        # loss += regularization_penalty
         optimizer = tf.train.AdamOptimizer(self.para['lr'])
         self.trainstep = optimizer.minimize(loss)
         self.loss = loss
@@ -166,11 +185,13 @@ class Simple_Deep:
         for b in range(batch_per_epoch):
             x, y = zip(*testset[start_position: start_position + batch_size])
             start_position += batch_size
+            x, x_s = zip(*x)
             y = np.array(y)
             mask = y != -1
             mask = mask.astype(np.float32)
             feed_dict = {
                 self.input: x,
+                self.input_s: x_s,
                 self.labels: y,
                 self.mask: mask,
                 self.keep_prob: 1,
@@ -186,7 +207,7 @@ class Simple_Deep:
                                                           ave_auc(labels, preds)))
         f = open(self.logs_path + '/log', 'a')
         f.write("Test loss {0} accuracy {1} auc {2}\n".format(np.mean(losses), cal_accuracy(labels, preds),
-                                                          ave_auc(labels, preds)))
+                                                              ave_auc(labels, preds)))
 
         return ave_auc(labels, preds)
 
@@ -201,11 +222,13 @@ class Simple_Deep:
             for b in range(batch_per_epoch):
                 x, y = zip(*trainset[start_position: start_position + batch_size])
                 start_position += batch_size
+                x, x_s = zip(*x)
                 y = np.array(y)
                 mask = y != -1
                 mask = mask.astype(np.float32)
                 feed_dict = {
                     self.input: x,
+                    self.input_s: x_s,
                     self.labels: y,
                     self.mask: mask,
                     self.keep_prob: 0.5,
@@ -221,8 +244,9 @@ class Simple_Deep:
                 "Train epoch {0} loss {1} accuracy {2} auc {3}".format(e, np.mean(losses), cal_accuracy(labels, preds),
                                                                        ave_auc(labels, preds)))
             f = open(self.logs_path + '/log', 'a')
-            f.write("Train epoch {0} loss {1} accuracy {2} auc {3}\n".format(e, np.mean(losses), cal_accuracy(labels, preds),
-                                                                       ave_auc(labels, preds)))
+            f.write("Train epoch {0} loss {1} accuracy {2} auc {3}\n".format(e, np.mean(losses),
+                                                                             cal_accuracy(labels, preds),
+                                                                             ave_auc(labels, preds)))
             result = self.test(int(sys.argv[3]))
             if result > max:
                 model.save_model()
@@ -240,6 +264,6 @@ class Simple_Deep:
 
 
 if __name__ == '__main__':
-    para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': float(sys.argv[4])}
-    model = Simple_Deep('./model', para, trainset, testset)
+    para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 512, 'lr': float(sys.argv[4]), 'sdim': 1800}
+    model = Simple_Deep('./model_second', para, trainset, testset)
     model.train(batch_size=int(sys.argv[2]), epoch=int(sys.argv[1]))
