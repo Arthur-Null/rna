@@ -1,5 +1,7 @@
 import os
 import re
+import pickle
+
 path = 'RNA_trainset/'
 def readfile(file):
     f = open(file,"r")
