@@ -119,10 +119,11 @@ class Simple_Deep:
 
     def _build_graph(self):
         batchsize = tf.shape(self.input)[0]
-        x = tf.reshape(self.input, [batchsize, self.para['len'], 4])
+        x = tf.reshape(self.input, [batchsize, self.para['len'], 4, 1])
         # x = tf.transpose(x, [0, 2, 1])
         # filter = tf.Variable(tf.random_normal([tf.shape(x)[1], 4, 1, 1]))
-        conv = tf.layers.conv1d(x, 8, kernel_size=4, activation=tf.nn.relu)
+        conv = tf.layers.conv2d(x, 16, kernel_size=[4, 4], activation=tf.nn.relu)
+        conv = tf.reshape(conv, [batchsize, conv.shape[1], conv.shape[3]])
         out = tf.layers.max_pooling1d(conv, 3, strides=3)
         out = tf.nn.dropout(out, self.keep_prob)
         print(out.shape)
