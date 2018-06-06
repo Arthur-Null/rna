@@ -126,7 +126,7 @@ class Simple_Deep:
         # x = tf.transpose(x, [0, 2, 1])
         # filter = tf.Variable(tf.random_normal([tf.shape(x)[1], 4, 1, 1]))
         conv = tf.layers.conv2d(x, 16, kernel_size=[4, 4], activation=tf.nn.relu)
-        conv = tf.reshape(conv, [batchsize, conv.shape[1], conv.shape[3]])
+        conv = tf.reshape(conv, [batchsize, int(conv.shape[1]), int(conv.shape[3])])
         out = tf.layers.max_pooling1d(conv, 3, strides=3)
         out = tf.nn.dropout(out, self.keep_prob)
         print(out.shape)
@@ -183,11 +183,14 @@ class Simple_Deep:
             labels += y.tolist()
             preds += pred.tolist()
             # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
+        auc = ave_auc(labels, preds)
         print("Test loss {0} accuracy {1} auc {2}".format(np.mean(losses), cal_accuracy(labels, preds),
-                                                          ave_auc(labels, preds)))
+                                                          auc))
+        return auc
 
     def train(self, batch_size, epoch):
         batch_per_epoch = int(len(self.trainset) / batch_size)
+        max_auc = 0
         for e in range(epoch):
             start_position = 0
             losses = []
@@ -212,11 +215,16 @@ class Simple_Deep:
                 labels += y.tolist()
                 preds += pred.tolist()
                 # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
-            model.save_model()
+
+
             print(
                 "Train epoch {0} loss {1} accuracy {2} auc {3}".format(e, np.mean(losses), cal_accuracy(labels, preds),
                                                                        ave_auc(labels, preds)))
-            self.test(int(sys.argv[3]))
+            result = self.test(int(sys.argv[3]))
+            if result > max_auc:
+                max_auc = result
+                self.save_model()
+
 
     def load_model(self):
         try:
