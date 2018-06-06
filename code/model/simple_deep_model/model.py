@@ -56,7 +56,8 @@ def ave_auc(label, pred):
                 p[j].append(pred[i][j])
     for i in range(37):
         auc.append(roc_auc_score(l[i], p[i]))
-    return np.mean(auc)
+    return auc
+    #return np.mean(auc)
 
 
 class Simple_Deep:
@@ -186,9 +187,12 @@ class Simple_Deep:
         auc = ave_auc(labels, preds)
         print("Test loss {0} accuracy {1} auc {2}".format(np.mean(losses), cal_accuracy(labels, preds),
                                                           auc))
+        exit()
         return auc
 
     def train(self, batch_size, epoch):
+        self.load_model()
+        self.test(batch_size)
         batch_per_epoch = int(len(self.trainset) / batch_size)
         max_auc = 0
         for e in range(epoch):
