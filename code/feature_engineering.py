@@ -143,6 +143,20 @@ def get_data_2(data_path="../dataset/RNA_trainset2/", positive=1, negative=0, un
     assert labels.shape == (len(all_rna), number_of_protein)
     return all_rna, all_seq, labels, energies
 
+def cal_accuracy(label, pred, thethold=0.5):
+    aucs = []
+    for i in range(len(label)):
+        total = 0.
+        match = 0.
+        for j in range(len(label[i])):
+            if label[i][j] != -1:
+                total += 1
+                if label[i][j] == 0 and pred[i][j] < thethold or label[i][j] == 1 and pred[i][j] >= thethold:
+                    match += 1
+        aucs.append(match / total)
+    return aucs
+
+
 
 if __name__ == '__main__':
     start = time.time()
