@@ -265,5 +265,5 @@ class Simple_Deep:
 
 if __name__ == '__main__':
     para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': float(sys.argv[4]), 'sdim': 1800}
-    model = Simple_Deep('./model', para, trainset, testset)
+    model = Simple_Deep('./model_second', para, trainset, testset)
     model.train(batch_size=int(sys.argv[2]), epoch=int(sys.argv[1]))
