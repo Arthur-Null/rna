@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import *
 import time
 
 protein_list = ['AGO1', 'AGO2', 'AGO3', 'ALKBH5', 'AUF1', 'C17ORF85', 'C22ORF28', 'CAPRIN1', 'DGCR8', 'EIF4A3', 'EWSR1',
@@ -145,17 +146,17 @@ def get_data_2(data_path="../dataset/RNA_trainset2/", positive=1, negative=0, un
     return all_rna, all_seq, labels, energies
 
 
-def cal_accuracy(label, pred, thethold=0.5):
+def aucs(label, pred):
     aucs = []
+    l = [[]] * 37
+    p = [[]] * 37
     for i in range(len(label)):
-        total = 0.
-        match = 0.
         for j in range(len(label[i])):
             if label[i][j] != -1:
-                total += 1
-                if label[i][j] == 0 and pred[i][j] < thethold or label[i][j] == 1 and pred[i][j] >= thethold:
-                    match += 1
-        aucs.append(match / total)
+                l[j].append(label[i][j])
+                p[j].append(pred[i][j])
+    for i in range(37):
+        aucs.append(roc_auc_score(l[i], p[i]))
     return aucs
 
 
