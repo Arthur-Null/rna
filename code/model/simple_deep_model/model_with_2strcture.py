@@ -57,8 +57,11 @@ def cal_accuracy(label, pred, thethold=0.5):
 
 def ave_auc(label, pred):
     auc = []
-    l = [[]] * 37
-    p = [[]] * 37
+    l = []
+    p = []
+    for i in range(37):
+        l.append([])
+        p.append([])
     for i in range(len(label)):
         for j in range(len(label[i])):
             if label[i][j] != -1:
@@ -137,22 +140,23 @@ class Simple_Deep:
     def _build_graph(self):
         batchsize = tf.shape(self.input)[0]
         x = tf.reshape(self.input, [batchsize, self.para['len'], 4])
-        x_s = tf.reshape(self.input_s, [batchsize, self.para['len'], 5])
+        x_s = tf.reshape(self.input_s, [batchsize, self.para['len'], 6])
         conv_s = tf.layers.conv1d(x_s, 16, kernel_size=4, activation=tf.nn.relu)
         conv = tf.layers.conv1d(x, 16, kernel_size=4, activation=tf.nn.relu)
         out = tf.layers.max_pooling1d(conv, 3, strides=3)
         out_s = tf.layers.max_pooling1d(conv_s, 3, strides=3)
         out = tf.nn.dropout(out, self.keep_prob)
-        out_s = tf.nn.dropout(out, self.keep_prob)
+        out_s = tf.nn.dropout(out_s, self.keep_prob)
         out = tf.concat([out, out_s], -1)
+        print(out.shape)
         cell_fw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
         cell_bw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
         cell_fw = tf.contrib.rnn.DropoutWrapper(cell_fw, input_keep_prob=self.keep_prob,
                                                 output_keep_prob=self.keep_prob)
         cell_bw = tf.contrib.rnn.DropoutWrapper(cell_bw, input_keep_prob=self.keep_prob,
                                                 output_keep_prob=self.keep_prob)
-        cell_fw = tf.contrib.rnn.AttentionCellWrapper(cell_fw, attn_length=20)
-        cell_bw = tf.contrib.rnn.AttentionCellWrapper(cell_bw, attn_length=20)
+        cell_fw = tf.contrib.rnn.AttentionCellWrapper(cell_fw, attn_length=10)
+        cell_bw = tf.contrib.rnn.AttentionCellWrapper(cell_bw, attn_length=10)
         output = tf.concat(tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, out, dtype=tf.float32)[0], 2)
         len = int(output.shape[1]) - 1
         output = tf.slice(output, [0, len, 0], [-1, 1, -1])
@@ -162,9 +166,9 @@ class Simple_Deep:
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=output)
         loss = tf.reduce_sum(tf.multiply(loss, self.mask)) / tf.reduce_sum(self.mask)
         weights = tf.trainable_variables()
-        # l1_reg = tf.contrib.layers.l1_regularizer(scale=5e-6)
-        # regularization_penalty = tf.contrib.layers.apply_regularization(l1_reg, weights)
-        # loss += regularization_penalty
+        l1_reg = tf.contrib.layers.l1_regularizer(scale=1e-6)
+        regularization_penalty = tf.contrib.layers.apply_regularization(l1_reg, weights)
+        loss += regularization_penalty
         optimizer = tf.train.AdamOptimizer(self.para['lr'])
         self.trainstep = optimizer.minimize(loss)
         self.loss = loss
@@ -265,5 +269,6 @@ class Simple_Deep:
 
 if __name__ == '__main__':
     para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 512, 'lr': float(sys.argv[4]), 'sdim': 1800}
-    model = Simple_Deep('./model_second', para, trainset, testset)
+    model = Simple_Deep('./model_second_3', para, trainset, testset)
+    model.load_model()
     model.train(batch_size=int(sys.argv[2]), epoch=int(sys.argv[1]))

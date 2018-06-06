@@ -148,8 +148,11 @@ def get_data_2(data_path="../dataset/RNA_trainset2/", positive=1, negative=0, un
 
 def aucs(label, pred):
     aucs = []
-    l = [[]] * 37
-    p = [[]] * 37
+    p = []
+    l =[]
+    for i in range(37):
+        p.append([])
+        l.append([])
     for i in range(len(label)):
         for j in range(len(label[i])):
             if label[i][j] != -1:
