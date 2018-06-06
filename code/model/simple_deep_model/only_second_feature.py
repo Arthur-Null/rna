@@ -18,16 +18,6 @@ from code.feature_engineering import get_data_2
 original_rnas, all_seq, label, energies = get_data_2("../../../dataset/RNA_trainset2/")
 print(len(label))
 
-rnas = []
-for rna in original_rnas:
-    encoder = {'A': 0, 'G': 1, 'C': 2, 'T': 3}
-    rna = list(map(lambda x: encoder[x], rna))
-    rnas.append(rna)
-enc = OneHotEncoder()
-rnas = enc.fit_transform(rnas).toarray()
-for rna in rnas:
-    assert len(rna) == 1200
-
 seqs = []
 for seq in all_seq:
     assert len(seq) == 300
@@ -43,7 +33,7 @@ for seq in seqs:
         print(seq)
     # assert len(seq) == 900
 
-data = list(zip(rnas, seqs, energies))
+data = list(zip(seqs, energies))
 X_train, X_test, y_train, y_test = train_test_split(data, label, test_size=0.2, random_state=42)
 trainset = list(zip(X_train, y_train))
 testset = list(zip(X_test, y_test))
@@ -122,10 +112,6 @@ class Simple_Deep:
         self.sess.run(self.local_initializer)
 
     def _define_inputs(self):
-        self.input = tf.placeholder(
-            tf.float32,
-            shape=[None, self.para['dim']]
-        )
         self.labels = tf.placeholder(
             tf.float32,
             shape=[None, self.para['label_dim']]
@@ -167,7 +153,7 @@ class Simple_Deep:
             return output
 
     def _build_graph(self):
-        batchsize = tf.shape(self.input)[0]
+        batchsize = tf.shape(self.seq)[0]
 
         output = self.graph_seqs(batchsize)
 
@@ -198,13 +184,12 @@ class Simple_Deep:
         labels = []
         for b in range(batch_per_epoch):
             x, y = zip(*testset[start_position: start_position + batch_size])
-            [rnas, seqs, energies] = zip(*x)
+            [_, seqs, energies] = zip(*x)
             start_position += batch_size
             y = np.array(y)
             mask = y != -1
             mask = mask.astype(np.float32)
             feed_dict = {
-                self.input: rnas,
                 self.seq: seqs,
                 self.energies: energies,
                 self.labels: y,
@@ -236,13 +221,12 @@ class Simple_Deep:
             labels = []
             for b in range(batch_per_epoch):
                 x, y = zip(*trainset[start_position: start_position + batch_size])
-                [rnas, seqs, energies] = zip(*x)
+                [_, seqs, energies] = zip(*x)
                 start_position += batch_size
                 y = np.array(y)
                 mask = y != -1
                 mask = mask.astype(np.float32)
                 feed_dict = {
-                    self.input: rnas,
                     self.seq: seqs,
                     self.energies: energies,
                     self.labels: y,
