@@ -8,7 +8,7 @@ from multiprocessing import Queue, Lock, Process
 
 def run_rnashape(sequence):
     #
-    cmd = 'echo "%s" | RNAshapes -t %d -c %d -# %d' % (sequence,5, 10, 1)
+    cmd = 'echo "%s" | RNAshapes -t %d -c %d -# %d' % (sequence, 5, 10, 1)
     out = sp.check_output(cmd, shell=True)
     text = out.strip().split('\n')
     seq_info = text[0]
@@ -24,7 +24,7 @@ def run_rnashape(sequence):
     graph = sequence_to_eden([("ID", sequence)]).next()
     graph.graph['structure']=structur
     annotate_single(graph)
-    encode_struct = ''.join([ x["entity_short"].upper() for x in graph.node.values() ])
+    encode_struct = ''.join([x["entity_short"].upper() for x in graph.node.values() ])
     return encode_struct
     #pdb.set_trace()
 
@@ -92,17 +92,17 @@ if __name__ == "__main__":
                     'METTL3', 'MOV10', 'PTB', 'PUM2', 'QKI', 'SFRS1', 'TAF15', 'TDP43', 'TIA1', 'TIAL1', 'TNRC6',
                     'U2AF65',
                     'WTAP', 'ZC3H7B']
-    dic = []
+    dic = set()
     queue = Queue()
     lock = Lock()
     for pot in protein_list:
-        fin = open('../dataset/RNA_trainset/' + pot + '/train', 'r')
-        fout = open('../dataset/RNA_trainset/' + pot + '/second_structure', 'w')
+        fin = open('../dataset/trainset/' + pot, 'r')
+        #fout = open('../dataset/trainset/' + pot + '_2nd', 'w')
         for line in tqdm(fin.readlines()):
             rna, label = line.split('\t')
-            if rna not in dic:
-                queue.put(rna)
-                dic.append(rna)
+            dic.add(rna)
+    for r in dic:
+        queue.put(str(r))
     print(len(dic))
     print(queue.qsize())
     proc = [Process(target=write_second, args=(queue, lock)) for i in range(10)]
