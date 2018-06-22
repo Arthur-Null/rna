@@ -274,8 +274,9 @@ class Simple_Deep:
 
 if __name__ == '__main__':
     para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': float(sys.argv[4])}
-    model = Simple_Deep('./model_2', para, trainset, testset)
-    model.train(batch_size=int(sys.argv[2]), epoch=int(sys.argv[1]))
+    model = Simple_Deep('./model', para, trainset, testset)
+    model.load_model()
+    #model.train(batch_size=int(sys.argv[2]), epoch=int(sys.argv[1]))
     # model.load_model()
-    # model.get_aucs(100)
-    # model.test(100)
+    model.get_aucs(100)
+    model.test(100)

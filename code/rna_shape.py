@@ -92,7 +92,7 @@ if __name__ == "__main__":
                     'METTL3', 'MOV10', 'PTB', 'PUM2', 'QKI', 'SFRS1', 'TAF15', 'TDP43', 'TIA1', 'TIAL1', 'TNRC6',
                     'U2AF65',
                     'WTAP', 'ZC3H7B']
-    dic = []
+    dic = set()
     queue = Queue()
     lock = Lock()
     for pot in protein_list:
@@ -100,9 +100,9 @@ if __name__ == "__main__":
         fout = open('../dataset/trainset/' + pot + '_2nd', 'w')
         for line in tqdm(fin.readlines()):
             rna, label = line.split('\t')
-            if rna not in dic:
-                queue.put(rna)
-                dic.append(rna)
+            dic.add(rna)
+    for r in dic:
+        queue.put(str(r))
     print(len(dic))
     print(queue.qsize())
     proc = [Process(target=write_second, args=(queue, lock)) for i in range(10)]
