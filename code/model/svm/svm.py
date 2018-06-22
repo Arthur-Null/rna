@@ -16,5 +16,6 @@ for (i, rnas, labels) in zip(range(37), data, dlabels):
     model.fit(X_train, y_train)
     predicted = model.predict(X_test)
     score = sklearn.metrics.accuracy_score(y_test, predicted)
-    print(protein_list[i] + " acc " + str(score))
+    auc = sklearn.metrics.roc_auc_score(y_test, predicted)
+    print(protein_list[i] + " acc " + str(score) + 'auc' + str(auc))
     #fout.write(protein_list[i] + "acc" + score)

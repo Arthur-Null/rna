@@ -30,13 +30,12 @@ for rna in data:
     second = list(map(lambda x: encoder_sec[x], second))
     rna = list(map(lambda x: encoder[x], rna))
     rnas.append(rna)
-
     seconds.append(second)
 enc = OneHotEncoder(4)
 rnas = enc.fit_transform(rnas).toarray()
 enc2 = OneHotEncoder(6)
 seconds = enc2.fit_transform(seconds).toarray()
-data = list(zip(rnas, seconds))
+data = list(seconds)
 X_train, X_test, y_train, y_test = train_test_split(data, label, test_size=0.2, random_state=42)
 trainset = list(zip(X_train, y_train))
 testset = list(zip(X_test, y_test))
@@ -57,11 +56,11 @@ def cal_accuracy(label, pred, thethold=0.5):
 
 def ave_auc(label, pred):
     auc = []
-    l = []
     p = []
+    l =[]
     for i in range(37):
-        l.append([])
         p.append([])
+        l.append([])
     for i in range(len(label)):
         for j in range(len(label[i])):
             if label[i][j] != -1:
@@ -118,10 +117,6 @@ class Simple_Deep:
         self.sess.run(self.local_initializer)
 
     def _define_inputs(self):
-        self.input = tf.placeholder(
-            tf.float32,
-            shape=[None, self.para['dim']]
-        )
         self.input_s = tf.placeholder(
             tf.float32,
             shape=[None, self.para['sdim']]
@@ -138,26 +133,24 @@ class Simple_Deep:
         self.predict_threshold = tf.placeholder(tf.float32, shape=[], name='threshold')
 
     def _build_graph(self):
-        batchsize = tf.shape(self.input)[0]
-        x = tf.reshape(self.input, [batchsize, self.para['len'], 4])
+        batchsize = tf.shape(self.input_s)[0]
+
         x_s = tf.reshape(self.input_s, [batchsize, self.para['len'], 6])
         conv_s = tf.layers.conv1d(x_s, 16, kernel_size=4, activation=tf.nn.relu)
-        conv = tf.layers.conv1d(x, 16, kernel_size=4, activation=tf.nn.relu)
-        out = tf.layers.max_pooling1d(conv, 3, strides=3)
+
         out_s = tf.layers.max_pooling1d(conv_s, 3, strides=3)
-        out = tf.nn.dropout(out, self.keep_prob)
+
         out_s = tf.nn.dropout(out_s, self.keep_prob)
-        out = tf.concat([out, out_s], -1)
-        print(out.shape)
+
         cell_fw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
         cell_bw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
         cell_fw = tf.contrib.rnn.DropoutWrapper(cell_fw, input_keep_prob=self.keep_prob,
                                                 output_keep_prob=self.keep_prob)
         cell_bw = tf.contrib.rnn.DropoutWrapper(cell_bw, input_keep_prob=self.keep_prob,
                                                 output_keep_prob=self.keep_prob)
-        cell_fw = tf.contrib.rnn.AttentionCellWrapper(cell_fw, attn_length=10)
-        cell_bw = tf.contrib.rnn.AttentionCellWrapper(cell_bw, attn_length=10)
-        output = tf.concat(tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, out, dtype=tf.float32)[0], 2)
+        cell_fw = tf.contrib.rnn.AttentionCellWrapper(cell_fw, attn_length=20)
+        cell_bw = tf.contrib.rnn.AttentionCellWrapper(cell_bw, attn_length=20)
+        output = tf.concat(tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, out_s, dtype=tf.float32)[0], 2)
         len = int(output.shape[1]) - 1
         output = tf.slice(output, [0, len, 0], [-1, 1, -1])
         output = tf.reshape(output, [-1, 2 * self.para['hidden_size']])
@@ -189,13 +182,12 @@ class Simple_Deep:
         for b in range(batch_per_epoch):
             x, y = zip(*testset[start_position: start_position + batch_size])
             start_position += batch_size
-            x, x_s = zip(*x)
+
             y = np.array(y)
             mask = y != -1
             mask = mask.astype(np.float32)
             feed_dict = {
-                self.input: x,
-                self.input_s: x_s,
+                self.input_s: x,
                 self.labels: y,
                 self.mask: mask,
                 self.keep_prob: 1,
@@ -226,13 +218,12 @@ class Simple_Deep:
             for b in range(batch_per_epoch):
                 x, y = zip(*trainset[start_position: start_position + batch_size])
                 start_position += batch_size
-                x, x_s = zip(*x)
+
                 y = np.array(y)
                 mask = y != -1
                 mask = mask.astype(np.float32)
                 feed_dict = {
-                    self.input: x,
-                    self.input_s: x_s,
+                    self.input_s: x,
                     self.labels: y,
                     self.mask: mask,
                     self.keep_prob: 0.5,
@@ -269,6 +260,5 @@ class Simple_Deep:
 
 if __name__ == '__main__':
     para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 512, 'lr': float(sys.argv[4]), 'sdim': 1800}
-    model = Simple_Deep('./model_second_3', para, trainset, testset)
-    model.load_model()
+    model = Simple_Deep('./model_second', para, trainset, testset)
     model.train(batch_size=int(sys.argv[2]), epoch=int(sys.argv[1]))

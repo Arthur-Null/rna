@@ -1,7 +1,9 @@
 import numpy as np
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import *
 import time
+
 protein_list = ['AGO1', 'AGO2', 'AGO3', 'ALKBH5', 'AUF1', 'C17ORF85', 'C22ORF28', 'CAPRIN1', 'DGCR8', 'EIF4A3', 'EWSR1',
                 'FMRP', 'FOX2', 'FUS', 'FXR1', 'FXR2', 'HNRNPC', 'HUR', 'IGF2BP1', 'IGF2BP2', 'IGF2BP3', 'LIN28A',
                 'LIN28B',
@@ -142,6 +144,23 @@ def get_data_2(data_path="../dataset/RNA_trainset2/", positive=1, negative=0, un
     labels = np.array(labels)
     assert labels.shape == (len(all_rna), number_of_protein)
     return all_rna, all_seq, labels, energies
+
+
+def aucs(label, pred):
+    aucs = []
+    p = []
+    l =[]
+    for i in range(37):
+        p.append([])
+        l.append([])
+    for i in range(len(label)):
+        for j in range(len(label[i])):
+            if label[i][j] != -1:
+                l[j].append(label[i][j])
+                p[j].append(pred[i][j])
+    for i in range(37):
+        aucs.append(roc_auc_score(l[i], p[i]))
+    return aucs
 
 
 if __name__ == '__main__':

@@ -64,8 +64,11 @@ def cal_accuracy(label, pred, thethold=0.5):
 
 def ave_auc(label, pred):
     auc = []
-    l = [[]] * 37
-    p = [[]] * 37
+    p = []
+    l =[]
+    for i in range(37):
+        p.append([])
+        l.append([])
     for i in range(len(label)):
         for j in range(len(label[i])):
             if label[i][j] != -1:
