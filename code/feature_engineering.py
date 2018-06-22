@@ -59,7 +59,6 @@ def get_data_sep(data_path="../dataset/trainset/", positive=1, negative=0):
     labels = []
     encoder = {'A': 0, 'G': 1, 'C': 2, 'T': 3}
     for pot in protein_list:
-        print('-' * 20 + pot + '-' * 20)
         replicate = set()
         fin = open(data_path + pot)
         X = []
@@ -74,8 +73,6 @@ def get_data_sep(data_path="../dataset/trainset/", positive=1, negative=0):
             try:
                 rna = list(map(lambda x: encoder[x], rna))
             except:
-                print('N')
-                print(label)
                 continue
             X.append(rna)
             y.append(label)

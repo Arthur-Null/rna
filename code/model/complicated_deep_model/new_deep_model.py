@@ -39,6 +39,7 @@ for i in range(37):
     trainset.append(list(zip(X_train, y_train)))
     testset.append(list(zip(X_test, y_test)))
     valset.append(list(zip(X_val, y_val)))
+print("Load dataset finished!")
 
 
 def cal_accuracy(label, pred, thethold=0.5):
@@ -189,11 +190,12 @@ class Simple_Deep:
             labels += y.tolist()
             preds += pred.tolist()
             # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
-        print("Test loss {0}  auc {1}".format(np.mean(losses), roc_auc_score(labels, preds)))
+        auc = roc_auc_score(labels, preds)
+        print("Test loss {0}  auc {1}".format(np.mean(losses), auc))
         f = open(self.logs_path + '/log', 'a')
-        f.write("Test loss {0} auc {1}\n".format(np.mean(losses), roc_auc_score(labels, preds)))
+        f.write("Test loss {0} auc {1}\n".format(np.mean(losses), auc))
 
-        return ave_auc(labels, preds)
+        return auc
 
     def train(self, batch_size, epoch):
         batch_per_epoch = int(len(self.trainset) / batch_size)
@@ -219,10 +221,11 @@ class Simple_Deep:
                 labels += y.tolist()
                 preds += pred.tolist()
                 # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
+            auc = roc_auc_score(labels, preds)
             print(
-                "Train epoch {0} loss {1} auc {2}".format(e, np.mean(losses),  roc_auc_score(labels, preds)))
+                "Train epoch {0} loss {1} auc {2}".format(e, np.mean(losses),  auc))
             f = open(self.logs_path + '/log', 'a')
-            f.write("Train epoch {0} loss {1} auc {2}\n".format(e, np.mean(losses), roc_auc_score(labels, preds)))
+            f.write("Train epoch {0} loss {1} auc {2}\n".format(e, np.mean(losses), auc))
             result = self.test(int(sys.argv[3]))
             if result > max:
                 model.save_model()
@@ -278,6 +281,7 @@ if __name__ == '__main__':
         path = './' + protein_list[i]
         if os.path.exists(path):
             continue
+        os.mkdir(path)
         model = Simple_Deep(path, para, trainset[i], valset[i])
         model.train(batch_size=int(sys.argv[2]), epoch=int(sys.argv[1]))
         # model.load_model()
