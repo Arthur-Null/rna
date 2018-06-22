@@ -156,7 +156,7 @@ def aucs(label, pred):
     aucs = []
     p = []
     l =[]
-    for i in range(37):
+    for i in range(1):
         p.append([])
         l.append([])
     for i in range(len(label)):
@@ -164,9 +164,11 @@ def aucs(label, pred):
             if label[i][j] != -1:
                 l[j].append(label[i][j])
                 p[j].append(pred[i][j])
-    for i in range(37):
+    for i in range(1):
         aucs.append(roc_auc_score(l[i], p[i]))
     return aucs
+
+
 
 
 if __name__ == '__main__':
