@@ -175,5 +175,5 @@ if __name__ == '__main__':
     # end = time.time()
     # print(len(rnas[1]), len(labels[1]), end-start, len(all_seq), len(energies), len(rnas))
     rnas, labels = get_data_sep()
-    print(rnas[1].shape, labels[1].shape)
+    print(rnas[7].shape, labels[1].shape)
 

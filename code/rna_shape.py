@@ -24,7 +24,7 @@ def run_rnashape(sequence):
     graph = sequence_to_eden([("ID", sequence)]).next()
     graph.graph['structure']=structur
     annotate_single(graph)
-    encode_struct = ''.join([ x["entity_short"].upper() for x in graph.node.values() ])
+    encode_struct = ''.join([x["entity_short"].upper() for x in graph.node.values() ])
     return encode_struct
     #pdb.set_trace()
 
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     lock = Lock()
     for pot in protein_list:
         fin = open('../dataset/trainset/' + pot, 'r')
-        fout = open('../dataset/trainset/' + pot + '_2nd', 'w')
+        #fout = open('../dataset/trainset/' + pot + '_2nd', 'w')
         for line in tqdm(fin.readlines()):
             rna, label = line.split('\t')
             dic.add(rna)
