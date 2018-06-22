@@ -51,7 +51,7 @@ def get_data(data_path="../dataset/trainset/", positive=1, negative=0, unwatched
     return all_rna, labels
 
 
-def get_data_sep(data_path="../dataset/RNA_trainset/", positive=1, negative=0):
+def get_data_sep(data_path="../dataset/trainset/", positive=1, negative=0):
     """
     rarely same as above
     """
@@ -61,7 +61,7 @@ def get_data_sep(data_path="../dataset/RNA_trainset/", positive=1, negative=0):
     for pot in protein_list:
         print('-' * 20 + pot + '-' * 20)
         replicate = set()
-        fin = open(data_path + pot + '/train')
+        fin = open(data_path + pot)
         X = []
         y = []
         for line in fin.readlines():
@@ -71,11 +71,17 @@ def get_data_sep(data_path="../dataset/RNA_trainset/", positive=1, negative=0):
             else:
                 replicate.add(rna)
             label = positive if int(label) == 1 else negative
-            rna = list(map(lambda x: encoder[x], rna))
+            try:
+                rna = list(map(lambda x: encoder[x], rna))
+            except:
+                print('N')
+                print(label)
+                continue
             X.append(rna)
             y.append(label)
         enc = OneHotEncoder(n_values=4)
-        X = enc.fit_transform(X)
+        X = enc.fit_transform(X).toarray()
+        y = np.array(y)
         rnas.append(X)
         labels.append(y)
     return rnas, labels
@@ -168,6 +174,6 @@ if __name__ == '__main__':
     # rnas, all_seq, labels, energies = get_data_2()
     # end = time.time()
     # print(len(rnas[1]), len(labels[1]), end-start, len(all_seq), len(energies), len(rnas))
-    rnas, labels = get_data()
-    print(len(rnas))
+    rnas, labels = get_data_sep()
+    print(rnas[1].shape, labels[1].shape)
 

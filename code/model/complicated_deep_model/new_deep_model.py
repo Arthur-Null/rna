@@ -16,7 +16,7 @@ from sklearn.metrics import *
 from code.feature_engineering import get_data
 from code.feature_engineering import aucs
 
-data, label = get_data(data_path="../../../dataset/RNA_trainset/")
+data, label = get_data(data_path="../../../dataset/trainset/")
 print(len(label))
 
 rnas = []
@@ -115,10 +115,6 @@ class Simple_Deep:
             tf.float32,
             shape=[None, self.para['label_dim']]
         )
-        self.mask = tf.placeholder(
-            tf.float32,
-            shape=[None, self.para['label_dim']]
-        )
         self.keep_prob = tf.placeholder(tf.float32, shape=[], name='keep_prob')
         self.predict_threshold = tf.placeholder(tf.float32, shape=[], name='threshold')
 
@@ -145,7 +141,6 @@ class Simple_Deep:
         output = tf.layers.dense(output, self.para['label_dim'])
         self.prediction = tf.nn.sigmoid(output)
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=output)
-        loss = tf.reduce_sum(tf.multiply(loss, self.mask)) / tf.reduce_sum(self.mask)
         weights = tf.trainable_variables()
         l1_reg = tf.contrib.layers.l1_regularizer(scale=5e-6)
         regularization_penalty = tf.contrib.layers.apply_regularization(l1_reg, weights)
@@ -171,12 +166,9 @@ class Simple_Deep:
             x, y = zip(*testset[start_position: start_position + batch_size])
             start_position += batch_size
             y = np.array(y)
-            mask = y != -1
-            mask = mask.astype(np.float32)
             feed_dict = {
                 self.input: x,
                 self.labels: y,
-                self.mask: mask,
                 self.keep_prob: 1,
                 self.predict_threshold: 0
             }
@@ -206,12 +198,9 @@ class Simple_Deep:
                 x, y = zip(*trainset[start_position: start_position + batch_size])
                 start_position += batch_size
                 y = np.array(y)
-                mask = y != -1
-                mask = mask.astype(np.float32)
                 feed_dict = {
                     self.input: x,
                     self.labels: y,
-                    self.mask: mask,
                     self.keep_prob: 0.5,
                     self.predict_threshold: 0
                 }
@@ -243,12 +232,9 @@ class Simple_Deep:
             x, y = zip(*testset[start_position: start_position + batch_size])
             start_position += batch_size
             y = np.array(y)
-            mask = y != -1
-            mask = mask.astype(np.float32)
             feed_dict = {
                 self.input: x,
                 self.labels: y,
-                self.mask: mask,
                 self.keep_prob: 1,
                 self.predict_threshold: 0
             }
@@ -273,7 +259,7 @@ class Simple_Deep:
 
 
 if __name__ == '__main__':
-    para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': float(sys.argv[4])}
+    para = {'len': 300, 'label_dim': 1, 'dim': 1200, 'hidden_size': 256, 'lr': float(sys.argv[4])}
     model = Simple_Deep('./model_2', para, trainset, testset)
     model.train(batch_size=int(sys.argv[2]), epoch=int(sys.argv[1]))
     # model.load_model()
