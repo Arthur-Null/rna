@@ -8,7 +8,7 @@ from multiprocessing import Queue, Lock, Process
 
 def run_rnashape(sequence):
     #
-    cmd = 'echo "%s" | RNAshapes -t %d -c %d -# %d' % (sequence,5, 10, 1)
+    cmd = 'echo "%s" | RNAshapes -t %d -c %d -# %d' % (sequence, 5, 10, 1)
     out = sp.check_output(cmd, shell=True)
     text = out.strip().split('\n')
     seq_info = text[0]
@@ -96,8 +96,8 @@ if __name__ == "__main__":
     queue = Queue()
     lock = Lock()
     for pot in protein_list:
-        fin = open('../dataset/RNA_trainset/' + pot + '/train', 'r')
-        fout = open('../dataset/RNA_trainset/' + pot + '/second_structure', 'w')
+        fin = open('../dataset/trainset/' + pot, 'r')
+        fout = open('../dataset/trainset/' + pot + '_2nd', 'w')
         for line in tqdm(fin.readlines()):
             rna, label = line.split('\t')
             if rna not in dic:

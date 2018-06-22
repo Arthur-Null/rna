@@ -191,10 +191,43 @@ class Simple_Deep:
     def _build_graph(self):
         batchsize = tf.shape(self.input)[0]
 
-        output_rnas = self.graph_rnas(batchsize)
-        output_seqs = self.graph_seqs(batchsize)
-        print(output_rnas.shape, output_seqs.shape)
-        output = tf.concat([output_rnas, output_seqs], 1)
+        # output_rnas = self.graph_rnas(batchsize)
+        # output_seqs = self.graph_seqs(batchsize)
+        # print(output_rnas.shape, output_seqs.shape)
+        x = tf.reshape(self.input, [batchsize, self.para['len'], 4])
+        # x = tf.transpose(x, [0, 2, 1])
+        # filter = tf.Variable(tf.random_normal([tf.shape(x)[1], 4, 1, 1]))
+        conv = tf.layers.conv1d(x, 16, kernel_size=4, activation=tf.nn.relu)
+        out = tf.layers.max_pooling1d(conv, 3, strides=3)
+        out = tf.nn.dropout(out, self.keep_prob)
+        cell_fw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
+        cell_bw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
+        cell_fw = tf.contrib.rnn.DropoutWrapper(cell_fw, input_keep_prob=self.keep_prob,
+                                                output_keep_prob=self.keep_prob)
+        cell_bw = tf.contrib.rnn.DropoutWrapper(cell_bw, input_keep_prob=self.keep_prob,
+                                                output_keep_prob=self.keep_prob)
+        cell_fw = tf.contrib.rnn.AttentionCellWrapper(cell_fw, attn_length=20)
+        cell_bw = tf.contrib.rnn.AttentionCellWrapper(cell_bw, attn_length=20)
+        output = tf.concat(tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, out, dtype=tf.float32)[0], 2)
+        len = int(output.shape[1]) - 1
+        output = tf.slice(output, [0, len, 0], [-1, 1, -1])
+        output = tf.reshape(output, [-1, 2 * self.para['hidden_size']])
+
+        x2 = tf.reshape(self.seq, [batchsize, self.para['dim2'], 1])
+        cell_fw2 = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
+        cell_bw2 = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
+        cell_fw2 = tf.contrib.rnn.DropoutWrapper(cell_fw2, input_keep_prob=self.keep_prob,
+                                                 output_keep_prob=self.keep_prob)
+        cell_bw2 = tf.contrib.rnn.DropoutWrapper(cell_bw2, input_keep_prob=self.keep_prob,
+                                                 output_keep_prob=self.keep_prob)
+        # cell_fw2 = tf.contrib.rnn.AttentionCellWrapper(cell_fw2, attn_length=20)
+        # cell_bw2 = tf.contrib.rnn.AttentionCellWrapper(cell_bw2, attn_length=20)
+        output2 = tf.concat(tf.nn.bidirectional_dynamic_rnn(cell_fw2, cell_bw2, x2, dtype=tf.float32)[0], 2)
+        len = int(output.shape[1]) - 1
+        output2 = tf.slice(output2, [0, len, 0], [-1, 1, -1])
+        output2 = tf.reshape(output2, [-1, 2 * self.para['hidden_size']])
+
+        output = tf.concat([output, output2], 1)
         output = tf.layers.dense(output, self.para['label_dim'])
         self.prediction = tf.nn.sigmoid(output)
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=output)

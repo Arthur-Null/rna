@@ -143,7 +143,7 @@ class Simple_Deep:
         out = tf.layers.max_pooling1d(conv, 3, strides=3)
         out_s = tf.layers.max_pooling1d(conv_s, 3, strides=3)
         out = tf.nn.dropout(out, self.keep_prob)
-        out_s = tf.nn.dropout(out, self.keep_prob)
+        out_s = tf.nn.dropout(out_s, self.keep_prob)
         out = tf.concat([out, out_s], -1)
         cell_fw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
         cell_bw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])

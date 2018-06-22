@@ -11,7 +11,7 @@ protein_list = ['AGO1', 'AGO2', 'AGO3', 'ALKBH5', 'AUF1', 'C17ORF85', 'C22ORF28'
 number_of_protein = len(protein_list)
 
 
-def get_data(data_path="../dataset/RNA_trainset/", positive=1, negative=0, unwatched=-1):
+def get_data(data_path="../dataset/trainset/", positive=1, negative=0, unwatched=-1):
     """
     Get data from dataset.
     Input:
@@ -29,7 +29,7 @@ def get_data(data_path="../dataset/RNA_trainset/", positive=1, negative=0, unwat
     labels = []
 
     for iter_protein in range(number_of_protein):
-        fin = open(data_path + protein_list[iter_protein] + '/train', 'r')
+        fin = open(data_path + protein_list[iter_protein], 'r')
         for line in fin.readlines():
             try:
                 rna, label = line.split('\t')
@@ -145,8 +145,10 @@ def get_data_2(data_path="../dataset/RNA_trainset2/", positive=1, negative=0, un
 
 
 if __name__ == '__main__':
-    start = time.time()
-    rnas, all_seq, labels, energies = get_data_2()
-    end = time.time()
-    print(len(rnas[1]), len(labels[1]), end-start, len(all_seq), len(energies), len(rnas))
+    # start = time.time()
+    # rnas, all_seq, labels, energies = get_data_2()
+    # end = time.time()
+    # print(len(rnas[1]), len(labels[1]), end-start, len(all_seq), len(energies), len(rnas))
+    rnas, labels = get_data()
+    print(len(rnas))
 
