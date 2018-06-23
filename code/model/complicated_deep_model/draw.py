@@ -10,12 +10,12 @@ pot_list = ['AGO1','AGO2', 'AGO3', 'ALKBH5', 'AUF1', 'C17ORF85', 'C22ORF28', 'CA
 
 
 def get_auc(pot):
-    for path in os.walk("cov1d/" + pot + '/'):
+    for path in os.walk("conv2d_models/" + pot + '/'):
         print(path)
         i = 0
         while path[1][i] == "checkpoint":
             i = i + 1
-        file = open("cov1d/" + pot + '/' + path[1][i] + "/log")
+        file = open("conv2d_models/" + pot + '/' + path[1][i] + "/log")
         result = -1
         epoch = 0
         max_epoch = 0
