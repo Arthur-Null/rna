@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import *
+import re
 import time
 
 protein_list = ['AGO1', 'AGO2', 'AGO3', 'ALKBH5', 'AUF1', 'C17ORF85', 'C22ORF28', 'CAPRIN1', 'DGCR8', 'EIF4A3', 'EWSR1',
@@ -51,7 +52,7 @@ def get_data(data_path="../dataset/trainset/", positive=1, negative=0, unwatched
     return all_rna, labels
 
 
-def get_data_sep(data_path="../dataset/trainset/", positive=1, negative=0):
+def get_data_sep(data_path="dataset/trainset/", positive=1, negative=0):
     """
     rarely same as above
     """
@@ -216,12 +217,63 @@ def get_data_sep_2(data_path="../dataset/trainset/", positive=1, negative=0):
         labels.append(y)
     return rnas, labels
 
+def get_data_wordseg(data_path="dataset/trainset_wordseg/trainset/", positive=1, negative=0):
+    """
+    rarely same as above
+    """
+    rnas = []
+    labels = []
+    encoder = {'A': 0, 'G': 1, 'C': 2, 'T': 3}
+    for pot in protein_list:
+        replicate = set()
+        fin = open(data_path + pot)
+        fin2 = open(data_path + pot + "_wordseg")
+        X = []
+        y = []
+        twostrs = []
+        j = 0
+        lines = fin.readlines()
+        line2s = fin2.readlines()
+        for i in range(len(lines)):
+            line = lines[i]
+            rna, label = line.split('\t')
+            if 'N' in rna:
+                continue
+            line2 = line2s[j]
+            twostr, label2 = line2.split('\t')
+            twostr = re.split(r'[\s]', twostr)
+            twostr = list(map(int, twostr))
+            if rna in replicate:
+                continue
+            else:
+                replicate.add(rna)
+            label = positive if int(label) == 1 else negative
+            try:
+                rna = list(map(lambda x: encoder[x], rna))
+            except:
+                continue
+            X.append(rna)
+
+            twostrs.append(twostr)
+            y.append(label)
+            j += 1
+        enc = OneHotEncoder(n_values=4)
+        X = enc.fit_transform(X).toarray()
+        y = np.array(y)
+        X = list(zip(X, twostrs))
+        print(len(X[0]))
+        rnas.append(X)
+        labels.append(y)
+    return rnas, labels
+
+
+
 
 if __name__ == '__main__':
     # start = time.time()
     # rnas, all_seq, labels, energies = get_data_2()
     # end = time.time()
     # print(len(rnas[1]), len(labels[1]), end-start, len(all_seq), len(energies), len(rnas))
-    rnas, labels = get_data_sep_2()
+    rnas, labels = get_data_wordseg()
     print(len(rnas[0]), labels[1].shape)
 
