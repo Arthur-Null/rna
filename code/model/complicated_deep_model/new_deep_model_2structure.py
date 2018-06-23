@@ -32,7 +32,7 @@ from code.feature_engineering import get_data_sep
 # testset = list(zip(X_test, y_test))
 # print("Load dataset finished!")
 dic = {}
-for line in open('../../../dataset/second_strcuture', 'r').readlines():
+for line in open('../../../dataset/second_strcuture2', 'r'):
     rna, second = line.split('\t')
     dic[rna] = second[:-1]
 

@@ -15,7 +15,7 @@ number_of_protein = len(protein_list)
 
 def get_data(data_path="../dataset/trainset/", positive=1, negative=0, unwatched=-1):
     """
-    Get data from dataset.
+    Get data from dataset
     Input:
         data_path: The path of dataset
         positive: The expectation label of positive labels
@@ -165,7 +165,38 @@ def aucs(label, pred):
         aucs.append(roc_auc_score(l[i], p[i]))
     return aucs
 
-
+def get_data_sep_2(data_path="../dataset/trainset/", positive=1, negative=0):
+    """
+    rarely same as above
+    """
+    rnas = []
+    labels = []
+    encoder = {'A': 0, 'G': 1, 'C': 2, 'T': 3}
+    for pot in protein_list:
+        replicate = set()
+        fin = open(data_path + pot)
+        X = []
+        y = []
+        for line in fin.readlines():
+            rna, label = line.split('\t')
+            if rna in replicate:
+                continue
+            else:
+                replicate.add(rna)
+            label = positive if int(label) == 1 else negative
+            try:
+                rna = list(map(lambda x: encoder[x], rna))
+            except:
+                continue
+            X.append([rna, sec])
+            XX/
+            y.append(label)
+        enc = OneHotEncoder(n_values=4)
+        X = enc.fit_transform(X).toarray()
+        y = np.array(y)
+        rnas.append(X)
+        labels.append(y)
+    return rnas, labels
 
 
 if __name__ == '__main__':
