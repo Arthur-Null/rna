@@ -197,9 +197,10 @@ class Simple_Deep:
 
         return auc
 
-    def train(self, batch_size, epoch):
+    def train(self, batch_size, epoch, earlystopping=50):
         batch_per_epoch = int(len(self.trainset) / batch_size)
         max = 0
+        count = 0
         for e in range(epoch):
             start_position = 0
             losses = []
@@ -230,6 +231,11 @@ class Simple_Deep:
             if result > max:
                 model.save_model()
                 max = result
+                count = 0
+            else:
+                count += 1
+                if count > earlystopping:
+                    break
 
     def get_aucs(self, batch_size):
         batch_per_epoch = int(len(self.testset) / batch_size)
@@ -278,7 +284,7 @@ if __name__ == '__main__':
                     'WTAP', 'ZC3H7B']
     para = {'len': 300, 'label_dim': 1, 'dim': 1200, 'hidden_size': 256, 'lr': float(sys.argv[4])}
     for i in range(37):
-        path = './' + protein_list[i]
+        path = './cov1d/' + protein_list[i]
         if os.path.exists(path):
             continue
         os.mkdir(path)

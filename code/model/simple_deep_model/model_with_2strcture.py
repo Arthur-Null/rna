@@ -215,7 +215,7 @@ class Simple_Deep:
 
         return ave_auc(labels, preds)
 
-    def train(self, batch_size, epoch):
+    def train(self, batch_size, epoch, earlystopping=50):
         batch_per_epoch = int(len(self.trainset) / batch_size)
         max = 0
         for e in range(epoch):

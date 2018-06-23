@@ -180,9 +180,10 @@ class Simple_Deep:
 
         return auc
 
-    def train(self, batch_size, epoch):
+    def train(self, batch_size, epoch, earlystopping=50):
         batch_per_epoch = int(len(self.trainset) / batch_size)
         max = 0
+        count = 0
         for e in range(epoch):
             start_position = 0
             losses = []
@@ -213,6 +214,12 @@ class Simple_Deep:
             if result > max:
                 model.save_model()
                 max = result
+                count = 0
+            else:
+                count += 1
+                if count > earlystopping:
+                    break
+
 
     def get_aucs(self, batch_size):
         batch_per_epoch = int(len(self.testset) / batch_size)
