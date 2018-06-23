@@ -279,7 +279,7 @@ if __name__ == '__main__':
                     'WTAP', 'ZC3H7B']
     para = {'len': 300, 'label_dim': 1, 'dim': 1200, 'hidden_size': 256, 'lr': float(sys.argv[4])}
     for i in range(37):
-        path = './' + protein_list[i]
+        path = './conv2d_models/' + protein_list[i]
         if os.path.exists(path):
             continue
         os.mkdir(path)
