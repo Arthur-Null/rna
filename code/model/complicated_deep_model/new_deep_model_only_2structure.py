@@ -100,15 +100,15 @@ class Simple_Deep:
 
     def _build_graph(self):
         batchsize = tf.shape(self.input_s)[0]
-        #x = tf.reshape(self.input, [batchsize, self.para['len'], 4])
+        # x = tf.reshape(self.input, [batchsize, self.para['len'], 4])
         x_s = tf.reshape(self.input_s, [batchsize, self.para['len'], 6])
         conv_s = tf.layers.conv1d(x_s, 16, kernel_size=4, activation=tf.nn.relu)
-        conv = tf.layers.conv1d(x, 16, kernel_size=4, activation=tf.nn.relu)
-        #out = tf.layers.max_pooling1d(conv, 3, strides=3)
-        #out = tf.nn.dropout(out, self.keep_prob)
+        # conv = tf.layers.conv1d(x, 16, kernel_size=4, activation=tf.nn.relu)
+        # out = tf.layers.max_pooling1d(conv, 3, strides=3)
+        # out = tf.nn.dropout(out, self.keep_prob)
         out_s = tf.layers.max_pooling1d(conv_s, 3, strides=3)
         out = tf.nn.dropout(out_s, self.keep_prob)
-        #out = tf.concat([out, out_s], -1)
+        # out = tf.concat([out, out_s], -1)
         cell_fw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
         cell_bw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
         cell_fw = tf.contrib.rnn.DropoutWrapper(cell_fw, input_keep_prob=self.keep_prob,
@@ -211,7 +211,6 @@ class Simple_Deep:
                 count += 1
                 if count > earlystopping:
                     break
-
 
     def get_aucs(self, batch_size):
         batch_per_epoch = int(len(self.testset) / batch_size)
