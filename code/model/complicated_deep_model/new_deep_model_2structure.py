@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import *
 from code.feature_engineering import get_data
 from code.feature_engineering import aucs
-from code.feature_engineering import get_data_sep
+from code.feature_engineering import get_data_sep_2
 
 # data, label = get_data(data_path="../../../dataset/trainset/")
 # print(len(label))
@@ -31,12 +31,8 @@ from code.feature_engineering import get_data_sep
 # trainset = list(zip(X_train, y_train))
 # testset = list(zip(X_test, y_test))
 # print("Load dataset finished!")
-dic = {}
-for line in open('../../../dataset/second_strcuture2', 'r'):
-    rna, second = line.split('\t')
-    dic[rna] = second[:-1]
 
-data, label = get_data_sep(data_path="../../../dataset/trainset/")
+data, label = get_data_sep_2(data_path="../../../dataset/trainset/")
 trainset, testset, valset = [], [], []
 for i in range(37):
     X_train, X_test, y_train, y_test = train_test_split(data[i], label[i], test_size=0.125, random_state=42)
@@ -193,8 +189,10 @@ class Simple_Deep:
                 x, y = zip(*self.trainset[start_position: start_position + batch_size])
                 start_position += batch_size
                 y = np.array(y)
+                x, x_s = zip(*x)
                 feed_dict = {
                     self.input: x,
+                    self.input_s: x_s,
                     self.labels: y,
                     self.keep_prob: 0.5,
                     self.predict_threshold: 0
@@ -232,8 +230,10 @@ class Simple_Deep:
             x, y = zip(*self.testset[start_position: start_position + batch_size])
             start_position += batch_size
             y = np.array(y)
+            x, x_s = zip(*x)
             feed_dict = {
                 self.input: x,
+                self.input_s: x_s,
                 self.labels: y,
                 self.keep_prob: 1,
                 self.predict_threshold: 0
@@ -267,7 +267,7 @@ if __name__ == '__main__':
                     'WTAP', 'ZC3H7B']
     para = {'len': 300, 'label_dim': 1, 'dim': 1200, 'hidden_size': 256, 'lr': float(sys.argv[4]), 'sdim': 1800}
     for i in range(37):
-        path = './model_2structure/' + protein_list[i]
+        path = './2structure_model/' + protein_list[i]
         if os.path.exists(path):
             continue
         os.mkdir(path)

@@ -172,13 +172,26 @@ def get_data_sep_2(data_path="../dataset/trainset/", positive=1, negative=0):
     rnas = []
     labels = []
     encoder = {'A': 0, 'G': 1, 'C': 2, 'T': 3}
+    encoder_sec = {'S': 0, 'M': 1, 'H': 2, 'I': 3, 'T': 4, 'F': 5}
     for pot in protein_list:
         replicate = set()
         fin = open(data_path + pot)
+        fin2 = open(data_path + pot + "_2nd")
         X = []
         y = []
-        for line in fin.readlines():
+        twostrs = []
+        j = 0
+        lines = fin.readlines()
+        line2s = fin2.readlines()
+        for i in range(len(lines)):
+            line = lines[i]
             rna, label = line.split('\t')
+            if 'N' in rna:
+                continue
+            line2 = line2s[j]
+            twostr, label2 = line2.split('\t')
+
+            assert label == label2
             if rna in replicate:
                 continue
             else:
@@ -186,14 +199,19 @@ def get_data_sep_2(data_path="../dataset/trainset/", positive=1, negative=0):
             label = positive if int(label) == 1 else negative
             try:
                 rna = list(map(lambda x: encoder[x], rna))
+                twostr = list(map(lambda x: encoder_sec[x], twostr))
             except:
                 continue
-            X.append([rna, sec])
-            XX/
+            X.append(rna)
+            twostrs.append(twostr)
             y.append(label)
+            j += 1
         enc = OneHotEncoder(n_values=4)
         X = enc.fit_transform(X).toarray()
+        enc2 = OneHotEncoder(n_values=6)
+        twostrs = enc2.fit_transform(twostrs).toarray()
         y = np.array(y)
+        X = list(zip(X, twostrs))
         rnas.append(X)
         labels.append(y)
     return rnas, labels
@@ -204,6 +222,6 @@ if __name__ == '__main__':
     # rnas, all_seq, labels, energies = get_data_2()
     # end = time.time()
     # print(len(rnas[1]), len(labels[1]), end-start, len(all_seq), len(energies), len(rnas))
-    rnas, labels = get_data_sep()
-    print(rnas[7].shape, labels[1].shape)
+    rnas, labels = get_data_sep_2()
+    print(len(rnas[0]), labels[1].shape)
 
