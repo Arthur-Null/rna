@@ -40,40 +40,11 @@ data, label = get_data_sep(data_path="../../../dataset/trainset/")
 trainset, testset, valset = [], [], []
 for i in range(37):
     X_train, X_test, y_train, y_test = train_test_split(data[i], label[i], test_size=0.125, random_state=42)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=1/7, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=1 / 7, random_state=42)
     trainset.append(list(zip(X_train, y_train)))
     testset.append(list(zip(X_test, y_test)))
     valset.append(list(zip(X_val, y_val)))
 print("Load dataset finished!")
-
-
-def cal_accuracy(label, pred, thethold=0.5):
-    total = 0.
-    match = 0.
-    for i in range(len(label)):
-        for j in range(len(label[i])):
-            if label[i][j] != -1:
-                total += 1
-                if label[i][j] == 0 and pred[i][j] < thethold or label[i][j] == 1 and pred[i][j] >= thethold:
-                    match += 1
-    return match / total
-
-
-def ave_auc(label, pred):
-    auc = []
-    p = []
-    l = []
-    for i in range(37):
-        p.append([])
-        l.append([])
-    for i in range(len(label)):
-        for j in range(len(label[i])):
-            if label[i][j] != -1:
-                l[j].append(label[i][j])
-                p[j].append(pred[i][j])
-    for i in range(37):
-        auc.append(roc_auc_score(l[i], p[i]))
-    return np.mean(auc)
 
 
 class Simple_Deep:
@@ -235,7 +206,7 @@ class Simple_Deep:
                 # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
             auc = roc_auc_score(labels, preds)
             print(
-                "Train epoch {0} loss {1} auc {2}".format(e, np.mean(losses),  auc))
+                "Train epoch {0} loss {1} auc {2}".format(e, np.mean(losses), auc))
             f = open(self.logs_path + '/log', 'a')
             f.write("Train epoch {0} loss {1} auc {2}\n".format(e, np.mean(losses), auc))
             result = self.test(int(sys.argv[3]))
@@ -267,7 +238,6 @@ class Simple_Deep:
             preds += pred.tolist()
             # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
         print(aucs(labels, preds))
-
 
     def load_model(self):
         try:
