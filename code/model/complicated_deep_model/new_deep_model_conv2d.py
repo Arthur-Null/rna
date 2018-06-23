@@ -15,20 +15,30 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import *
 from code.feature_engineering import get_data
 from code.feature_engineering import aucs
+from code.feature_engineering import get_data_sep
 
-data, label = get_data(data_path="../../../dataset/RNA_trainset/")
-print(len(label))
-
-rnas = []
-for rna in data:
-    encoder = {'A': 0, 'G': 1, 'C': 2, 'T': 3}
-    rna = list(map(lambda x: encoder[x], rna))
-    rnas.append(rna)
-enc = OneHotEncoder()
-rnas = enc.fit_transform(rnas).toarray()
-X_train, X_test, y_train, y_test = train_test_split(rnas, label, test_size=0.2, random_state=42)
-trainset = list(zip(X_train, y_train))
-testset = list(zip(X_test, y_test))
+# data, label = get_data(data_path="../../../dataset/trainset/")
+# print(len(label))
+#
+# rnas = []
+# for rna in data:
+#     encoder = {'A': 0, 'G': 1, 'C': 2, 'T': 3}
+#     rna = list(map(lambda x: encoder[x], rna))
+#     rnas.append(rna)
+# enc = OneHotEncoder()
+# rnas = enc.fit_transform(rnas).toarray()
+# X_train, X_test, y_train, y_test = train_test_split(rnas, label, test_size=0.2, random_state=42)
+# trainset = list(zip(X_train, y_train))
+# testset = list(zip(X_test, y_test))
+# print("Load dataset finished!")
+data, label = get_data_sep(data_path="../../../dataset/trainset/")
+trainset, testset, valset = [], [], []
+for i in range(37):
+    X_train, X_test, y_train, y_test = train_test_split(data[i], label[i], test_size=0.125, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=1/7, random_state=42)
+    trainset.append(list(zip(X_train, y_train)))
+    testset.append(list(zip(X_test, y_test)))
+    valset.append(list(zip(X_val, y_val)))
 print("Load dataset finished!")
 
 
@@ -113,21 +123,18 @@ class Simple_Deep:
         )
         self.labels = tf.placeholder(
             tf.float32,
-            shape=[None, self.para['label_dim']]
-        )
-        self.mask = tf.placeholder(
-            tf.float32,
-            shape=[None, self.para['label_dim']]
+            shape=[None]
         )
         self.keep_prob = tf.placeholder(tf.float32, shape=[], name='keep_prob')
         self.predict_threshold = tf.placeholder(tf.float32, shape=[], name='threshold')
 
     def _build_graph(self):
         batchsize = tf.shape(self.input)[0]
-        x = tf.reshape(self.input, [batchsize, self.para['len'], 4])
+        x = tf.reshape(self.input, [batchsize, self.para['len'], 4, 1])
         # x = tf.transpose(x, [0, 2, 1])
         # filter = tf.Variable(tf.random_normal([tf.shape(x)[1], 4, 1, 1]))
-        conv = tf.layers.conv1d(x, 16, kernel_size=4, activation=tf.nn.relu)
+        conv = tf.layers.conv2d(x, 16, kernel_size=[4, 4], activation=tf.nn.relu)
+        conv = tf.reshape(conv, [batchsize, int(conv.shape[1]), int(conv.shape[3])])
         out = tf.layers.max_pooling1d(conv, 3, strides=3)
         out = tf.nn.dropout(out, self.keep_prob)
         cell_fw = tf.contrib.rnn.BasicLSTMCell(self.para['hidden_size'])
@@ -143,9 +150,10 @@ class Simple_Deep:
         output = tf.slice(output, [0, len, 0], [-1, 1, -1])
         output = tf.reshape(output, [-1, 2 * self.para['hidden_size']])
         output = tf.layers.dense(output, self.para['label_dim'])
-        self.prediction = tf.nn.sigmoid(output)
-        loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=output)
-        loss = tf.reduce_sum(tf.multiply(loss, self.mask)) / tf.reduce_sum(self.mask)
+        output = tf.reshape(output, [batchsize])
+        prediction = tf.nn.sigmoid(output)
+        self.prediction = prediction
+        loss = tf.losses.log_loss(self.labels, prediction)
         weights = tf.trainable_variables()
         l1_reg = tf.contrib.layers.l1_regularizer(scale=5e-6)
         regularization_penalty = tf.contrib.layers.apply_regularization(l1_reg, weights)
@@ -168,15 +176,12 @@ class Simple_Deep:
         preds = []
         labels = []
         for b in range(batch_per_epoch):
-            x, y = zip(*testset[start_position: start_position + batch_size])
+            x, y = zip(*self.testset[start_position: start_position + batch_size])
             start_position += batch_size
             y = np.array(y)
-            mask = y != -1
-            mask = mask.astype(np.float32)
             feed_dict = {
                 self.input: x,
                 self.labels: y,
-                self.mask: mask,
                 self.keep_prob: 1,
                 self.predict_threshold: 0
             }
@@ -186,13 +191,12 @@ class Simple_Deep:
             labels += y.tolist()
             preds += pred.tolist()
             # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
-        print("Test loss {0} accuracy {1} auc {2}".format(np.mean(losses), cal_accuracy(labels, preds),
-                                                          ave_auc(labels, preds)))
+        auc = roc_auc_score(labels, preds)
+        print("Test loss {0}  auc {1}".format(np.mean(losses), auc))
         f = open(self.logs_path + '/log', 'a')
-        f.write("Test loss {0} accuracy {1} auc {2}\n".format(np.mean(losses), cal_accuracy(labels, preds),
-                                                          ave_auc(labels, preds)))
+        f.write("Test loss {0} auc {1}\n".format(np.mean(losses), auc))
 
-        return ave_auc(labels, preds)
+        return auc
 
     def train(self, batch_size, epoch):
         batch_per_epoch = int(len(self.trainset) / batch_size)
@@ -203,15 +207,12 @@ class Simple_Deep:
             preds = []
             labels = []
             for b in range(batch_per_epoch):
-                x, y = zip(*trainset[start_position: start_position + batch_size])
+                x, y = zip(*self.trainset[start_position: start_position + batch_size])
                 start_position += batch_size
                 y = np.array(y)
-                mask = y != -1
-                mask = mask.astype(np.float32)
                 feed_dict = {
                     self.input: x,
                     self.labels: y,
-                    self.mask: mask,
                     self.keep_prob: 0.5,
                     self.predict_threshold: 0
                 }
@@ -221,12 +222,11 @@ class Simple_Deep:
                 labels += y.tolist()
                 preds += pred.tolist()
                 # print("Train epoch {0} batch {1} loss {2}".format(e, b, loss))
+            auc = roc_auc_score(labels, preds)
             print(
-                "Train epoch {0} loss {1} accuracy {2} auc {3}".format(e, np.mean(losses), cal_accuracy(labels, preds),
-                                                                       ave_auc(labels, preds)))
+                "Train epoch {0} loss {1} auc {2}".format(e, np.mean(losses),  auc))
             f = open(self.logs_path + '/log', 'a')
-            f.write("Train epoch {0} loss {1} accuracy {2} auc {3}\n".format(e, np.mean(losses), cal_accuracy(labels, preds),
-                                                                       ave_auc(labels, preds)))
+            f.write("Train epoch {0} loss {1} auc {2}\n".format(e, np.mean(losses), auc))
             result = self.test(int(sys.argv[3]))
             if result > max:
                 model.save_model()
@@ -240,15 +240,12 @@ class Simple_Deep:
         preds = []
         labels = []
         for b in range(batch_per_epoch):
-            x, y = zip(*testset[start_position: start_position + batch_size])
+            x, y = zip(*self.testset[start_position: start_position + batch_size])
             start_position += batch_size
             y = np.array(y)
-            mask = y != -1
-            mask = mask.astype(np.float32)
             feed_dict = {
                 self.input: x,
                 self.labels: y,
-                self.mask: mask,
                 self.keep_prob: 1,
                 self.predict_threshold: 0
             }
@@ -273,10 +270,21 @@ class Simple_Deep:
 
 
 if __name__ == '__main__':
-    para = {'len': 300, 'label_dim': 37, 'dim': 1200, 'hidden_size': 256, 'lr': float(sys.argv[4])}
-    model = Simple_Deep('./model', para, trainset, testset)
-    model.load_model()
-    #model.train(batch_size=int(sys.argv[2]), epoch=int(sys.argv[1]))
-    # model.load_model()
-    model.get_aucs(100)
-    model.test(100)
+    protein_list = ['AGO1', 'AGO2', 'AGO3', 'ALKBH5', 'AUF1', 'C17ORF85', 'C22ORF28', 'CAPRIN1', 'DGCR8', 'EIF4A3',
+                    'EWSR1',
+                    'FMRP', 'FOX2', 'FUS', 'FXR1', 'FXR2', 'HNRNPC', 'HUR', 'IGF2BP1', 'IGF2BP2', 'IGF2BP3', 'LIN28A',
+                    'LIN28B',
+                    'METTL3', 'MOV10', 'PTB', 'PUM2', 'QKI', 'SFRS1', 'TAF15', 'TDP43', 'TIA1', 'TIAL1', 'TNRC6',
+                    'U2AF65',
+                    'WTAP', 'ZC3H7B']
+    para = {'len': 300, 'label_dim': 1, 'dim': 1200, 'hidden_size': 256, 'lr': float(sys.argv[4])}
+    for i in range(37):
+        path = './conv2d_models/' + protein_list[i]
+        if os.path.exists(path):
+            continue
+        os.mkdir(path)
+        model = Simple_Deep(path, para, trainset[i], valset[i])
+        model.train(batch_size=int(sys.argv[2]), epoch=int(sys.argv[1]))
+        # model.load_model()
+        # model.get_aucs(100)
+        # model.test(100)

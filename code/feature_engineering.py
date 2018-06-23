@@ -13,7 +13,7 @@ protein_list = ['AGO1', 'AGO2', 'AGO3', 'ALKBH5', 'AUF1', 'C17ORF85', 'C22ORF28'
 number_of_protein = len(protein_list)
 
 
-def get_data(data_path="../dataset/RNA_trainset/", positive=1, negative=0, unwatched=-1):
+def get_data(data_path="../dataset/trainset/", positive=1, negative=0, unwatched=-1):
     """
     Get data from dataset.
     Input:
@@ -31,7 +31,7 @@ def get_data(data_path="../dataset/RNA_trainset/", positive=1, negative=0, unwat
     labels = []
 
     for iter_protein in range(number_of_protein):
-        fin = open(data_path + protein_list[iter_protein] + '/train', 'r')
+        fin = open(data_path + protein_list[iter_protein], 'r')
         for line in fin.readlines():
             try:
                 rna, label = line.split('\t')
@@ -51,7 +51,7 @@ def get_data(data_path="../dataset/RNA_trainset/", positive=1, negative=0, unwat
     return all_rna, labels
 
 
-def get_data_sep(data_path="../dataset/RNA_trainset/", positive=1, negative=0):
+def get_data_sep(data_path="../dataset/trainset/", positive=1, negative=0):
     """
     rarely same as above
     """
@@ -59,9 +59,8 @@ def get_data_sep(data_path="../dataset/RNA_trainset/", positive=1, negative=0):
     labels = []
     encoder = {'A': 0, 'G': 1, 'C': 2, 'T': 3}
     for pot in protein_list:
-        print('-' * 20 + pot + '-' * 20)
         replicate = set()
-        fin = open(data_path + pot + '/train')
+        fin = open(data_path + pot)
         X = []
         y = []
         for line in fin.readlines():
@@ -71,11 +70,15 @@ def get_data_sep(data_path="../dataset/RNA_trainset/", positive=1, negative=0):
             else:
                 replicate.add(rna)
             label = positive if int(label) == 1 else negative
-            rna = list(map(lambda x: encoder[x], rna))
+            try:
+                rna = list(map(lambda x: encoder[x], rna))
+            except:
+                continue
             X.append(rna)
             y.append(label)
         enc = OneHotEncoder(n_values=4)
-        X = enc.fit_transform(X)
+        X = enc.fit_transform(X).toarray()
+        y = np.array(y)
         rnas.append(X)
         labels.append(y)
     return rnas, labels
@@ -150,7 +153,7 @@ def aucs(label, pred):
     aucs = []
     p = []
     l =[]
-    for i in range(37):
+    for i in range(1):
         p.append([])
         l.append([])
     for i in range(len(label)):
@@ -158,13 +161,18 @@ def aucs(label, pred):
             if label[i][j] != -1:
                 l[j].append(label[i][j])
                 p[j].append(pred[i][j])
-    for i in range(37):
+    for i in range(1):
         aucs.append(roc_auc_score(l[i], p[i]))
     return aucs
 
 
+
+
 if __name__ == '__main__':
-    start = time.time()
-    rnas, all_seq, labels, energies = get_data_2()
-    end = time.time()
-    print(len(rnas[1]), len(labels[1]), end - start, len(all_seq), len(energies), len(rnas))
+    # start = time.time()
+    # rnas, all_seq, labels, energies = get_data_2()
+    # end = time.time()
+    # print(len(rnas[1]), len(labels[1]), end-start, len(all_seq), len(energies), len(rnas))
+    rnas, labels = get_data_sep()
+    print(rnas[7].shape, labels[1].shape)
+
