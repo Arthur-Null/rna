@@ -59,4 +59,4 @@ def segment_data(data_path="../dataset/trainset/"):
         fwords.close()
 
 if __name__ == '__main__':
-    segment()
+    segment_data()
