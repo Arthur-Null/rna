@@ -5,7 +5,7 @@ pot_list = ['AGO1','AGO2','AGO3', 'ALKBH5', 'AUF1', 'C17ORF85', 'C22ORF28', 'CAP
             'WTAP', 'ZC3H7B']
 
 dic = {}
-f = open('second_strcuture', 'r')
+f = open('second_strcuture2', 'r')
 for line in f.readlines():
     line.replace('\n', '')
     rna, second = line.split('\t')
