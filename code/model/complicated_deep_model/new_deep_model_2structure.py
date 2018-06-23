@@ -157,8 +157,10 @@ class Simple_Deep:
             x, y = zip(*self.testset[start_position: start_position + batch_size])
             start_position += batch_size
             y = np.array(y)
+            x, x_s = zip(*x)
             feed_dict = {
                 self.input: x,
+                self.input_s: x_s,
                 self.labels: y,
                 self.keep_prob: 1,
                 self.predict_threshold: 0
