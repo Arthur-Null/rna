@@ -60,6 +60,7 @@ class Simple_Deep:
             self.local_initializer = tf.local_variables_initializer()
             self.saver = tf.train.Saver()
         self._initialize_session()
+        self.pred_path = None
 
     @property
     def save_path(self):
@@ -220,7 +221,6 @@ class Simple_Deep:
                 if count > earlystopping:
                     break
 
-
     def get_aucs(self, batch_size):
         batch_per_epoch = int(len(self.testset) / batch_size)
 
@@ -257,6 +257,34 @@ class Simple_Deep:
 
     def save_model(self, global_step=None):
         self.saver.save(self.sess, self.save_path, global_step=global_step)
+
+    def get_pred(self, dataset, batchsize):
+        if self.pred_path == None:
+            print("Please set the path to save predictions!")
+            return
+        fout = open(self.pred_path, 'a')
+        epochs = int(len(dataset) / batchsize)
+        start_position = 0
+        for b in range(epochs + 1):
+            if start_position >= dataset:
+                break
+            elif start_position + batchsize < len(dataset):
+                x, y = zip(*dataset[start_position: start_position + batchsize])
+            else:
+                x, y = zip(*dataset[start_position: ])
+            start_position += batchsize
+            x, x_s = zip(*x)
+            feed_dict = {
+                self.input: x,
+                self.input_s: x_s,
+                self.keep_prob: 1,
+                self.predict_threshold: 0.5
+            }
+            fetch = [self.prediction]
+            pred = self.sess.run(fetch, feed_dict)
+            for p in pred:
+                fout.write(float(p))
+                fout.write('\n')
 
 
 if __name__ == '__main__':
